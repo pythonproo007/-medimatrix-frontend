@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
         setUser(res.user);
         return { success: true };
       }
-      return { success: false, error: 'Authentication failed' };
+      return { success: false, error: res.error || 'Authentication failed' };
     } catch (err) {
       return { success: false, error: err.message };
     }

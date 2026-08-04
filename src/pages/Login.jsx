@@ -27,16 +27,24 @@ const Login = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { login, registerUser, forgotPassword } = useAuth();
   const navigate = useNavigate();
+
+  const fillQuickLogin = (u, p) => {
+    setUsername(u);
+    setPassword(p);
+    setError('');
+    setMessage('');
+  };
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setMessage('');
     setLoading(true);
-    const result = await login(username, password);
+    const result = await login(username.trim(), password);
     setLoading(false);
     if (result.success) {
       navigate('/');
@@ -152,14 +160,44 @@ const Login = () => {
 
         {mode === 'login' && (
           <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            {/* Quick Fill Demo Credentials */}
+            <div style={{ background: 'rgba(6, 182, 212, 0.06)', border: '1px solid rgba(6, 182, 212, 0.2)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', marginBottom: '5px' }}>
+              <div style={{ fontSize: '0.72rem', color: '#06b6d4', fontWeight: '600', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <i className="fa-solid fa-[#06b6d4] fa-bolt" style={{ marginRight: '5px' }}></i> Quick Demo Login
+              </div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => fillQuickLogin('admin', 'admin123')}
+                  style={{ padding: '4px 10px', background: 'rgba(6, 182, 212, 0.2)', border: '1px solid #06b6d4', borderRadius: '4px', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}
+                >
+                  👑 Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillQuickLogin('doctor', 'doctor123')}
+                  style={{ padding: '4px 10px', background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #10b981', borderRadius: '4px', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}
+                >
+                  🩺 Doctor
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillQuickLogin('employee', 'employee123')}
+                  style={{ padding: '4px 10px', background: 'rgba(99, 102, 241, 0.2)', border: '1px solid #6366f1', borderRadius: '4px', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}
+                >
+                  👤 Employee
+                </button>
+              </div>
+            </div>
+
             <div className="form-group">
-              <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Username</label>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Username or Email</label>
               <input 
                 type="text" 
                 value={username} 
                 onChange={(e) => setUsername(e.target.value)} 
                 required 
-                placeholder="Enter username"
+                placeholder="Enter username or email"
                 style={{ width: '100%', padding: '12px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff' }}
               />
             </div>
@@ -174,14 +212,23 @@ const Login = () => {
                   Forgot Password?
                 </button>
               </div>
-              <input 
-                type="password" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                required 
-                placeholder="Enter password"
-                style={{ width: '100%', padding: '12px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff' }}
-              />
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type={showPassword ? 'text' : 'password'} 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  required 
+                  placeholder="Enter password"
+                  style={{ width: '100%', padding: '12px 40px 12px 12px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                >
+                  <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                </button>
+              </div>
             </div>
 
             <button 
@@ -191,7 +238,9 @@ const Login = () => {
               style={{ width: '100%', padding: '12px', marginTop: '10px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}
             >
               {loading ? (
-                <i className="fa-solid fa-spinner fa-spin"></i>
+                <>
+                  <i className="fa-solid fa-spinner fa-spin"></i> Authenticating...
+                </>
               ) : (
                 <>
                   <i className="fa-solid fa-key"></i> Sign In to Dashboard
