@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '', // Proxied through Vite server configuration
+  baseURL: 'https://medimatrix-backend.onrender.com', // Proxied through Vite server configuration
   timeout: 10000
 });
 
