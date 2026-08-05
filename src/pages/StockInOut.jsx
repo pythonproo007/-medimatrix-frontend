@@ -259,7 +259,7 @@ const StockInOut = () => {
 
               <form onSubmit={handleInitiateStockIn} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div className="form-group">
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Target Medicine Name (Manual Input) *</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Select Target Medicine *</label>
                   <input 
                     type="text" 
                     list="medicine-name-suggestions"
