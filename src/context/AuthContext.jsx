@@ -1,43 +1,45 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useContext } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const [token, setToken] = useState(() => localStorage.getItem('medimatrix_token'));
   const [shopName, setShopName] = useState(() => {
     return localStorage.getItem('medimatrix_shopname') || 'MediMatrix';
   });
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const token = localStorage.getItem('medimatrix_token');
-      if (token) {
-        try {
-          const res = await api.get('/api/auth/me');
-          if (res.success) {
-            setUser(res.user);
-          } else {
-            localStorage.removeItem('medimatrix_token');
-          }
-        } catch (err) {
-          console.error('[Auth] Failed loading session:', err.message);
-          localStorage.removeItem('medimatrix_token');
-        }
+  const { data: userData, isLoading: loading } = useQuery({
+    queryKey: ['auth', 'me', token],
+    queryFn: async () => {
+      if (!token) return null;
+      try {
+        const res = await api.get('/api/auth/me');
+        if (res.success) return res.user;
+        localStorage.removeItem('medimatrix_token');
+        setToken(null);
+        return null;
+      } catch (err) {
+        console.error('[Auth] Failed loading session:', err.message);
+        localStorage.removeItem('medimatrix_token');
+        setToken(null);
+        return null;
       }
-      setLoading(false);
-    };
+    },
+    enabled: !!token
+  });
 
-    fetchUser();
-  }, []);
+  const user = userData || null;
 
   const login = async (username, password) => {
     try {
       const res = await api.post('/api/auth/login', { username, password });
       if (res.success && res.token) {
         localStorage.setItem('medimatrix_token', res.token);
-        setUser(res.user);
+        setToken(res.token);
+        queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
         return { success: true };
       }
       return { success: false, error: res.error || 'Authentication failed' };
@@ -59,7 +61,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.put('/api/auth/update-profile', formData);
       if (res.success) {
-        setUser(res.user);
+        queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
       }
       return res;
     } catch (err) {
@@ -84,7 +86,9 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('medimatrix_token');
-    setUser(null);
+    setToken(null);
+    queryClient.setQueryData(['auth', 'me'], null);
+    queryClient.clear();
   };
 
   return (

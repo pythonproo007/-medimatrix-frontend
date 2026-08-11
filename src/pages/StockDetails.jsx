@@ -1,31 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState } from 'react';
+import { useStockLogs } from '../hooks/useStockLogs';
 
 const StockDetails = () => {
-  const [logs, setLogs] = useState([]);
   const [search, setSearch] = useState('');
   const [transactionType, setTransactionType] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  const loadLogs = async () => {
-    setLoading(true);
-    try {
-      let url = `/api/stock-logs?transactionType=${transactionType}`;
-      if (search) url += `&search=${encodeURIComponent(search)}`;
-      const res = await api.get(url);
-      if (res.success) {
-        setLogs(res.data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadLogs();
-  }, [search, transactionType]);
+  // TanStack Query Hooks
+  const { data: logsData = [], isLoading: loading } = useStockLogs({ transactionType, search });
+  const logs = logsData;
 
   return (
     <div style={{ padding: '32px' }}>

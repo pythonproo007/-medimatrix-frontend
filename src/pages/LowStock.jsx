@@ -1,27 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React from 'react';
+import { useMedicines } from '../hooks/useMedicines';
 
 const LowStock = () => {
-  const [medicines, setMedicines] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const loadLowStock = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/api/medicines?filterAlert=low_stock');
-      if (res.success) {
-        setMedicines(res.data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadLowStock();
-  }, []);
+  const { data: medicinesData = [], isLoading: loading } = useMedicines({ filterAlert: 'low_stock' });
+  const medicines = medicinesData;
 
   return (
     <div style={{ padding: '32px' }}>

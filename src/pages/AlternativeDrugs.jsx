@@ -1,50 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import api from '../services/api';
+import { useMedicines } from '../hooks/useMedicines';
+import { useQuery } from '@tanstack/react-query';
 
 const AlternativeDrugs = () => {
-  const [medicines, setMedicines] = useState([]);
   const [selectedMedId, setSelectedMedId] = useState('');
   const [allergiesText, setAllergiesText] = useState('');
-  const [alternates, setAlternates] = useState([]);
-  const [originalMed, setOriginalMed] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
+  const [activeSearchParams, setActiveSearchParams] = useState(null);
 
-  useEffect(() => {
-    const fetchMeds = async () => {
-      try {
-        const res = await api.get('/api/medicines');
-        if (res.success) {
-          setMedicines(res.data);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchMeds();
-  }, []);
+  // TanStack Query Hooks
+  const { data: medicinesData = [] } = useMedicines();
+  const medicines = medicinesData;
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!selectedMedId) return;
-
-    setLoading(true);
-    setSearched(true);
-    try {
-      let url = `/api/medicines/${selectedMedId}/alternates`;
-      if (allergiesText.trim()) {
-        url += `?allergies=${encodeURIComponent(allergiesText.trim())}`;
+  const { data: alternatesData, isLoading: loading } = useQuery({
+    queryKey: ['alternates', activeSearchParams?.medId, activeSearchParams?.allergiesText],
+    queryFn: async () => {
+      let url = `/api/medicines/${activeSearchParams.medId}/alternates`;
+      if (activeSearchParams.allergiesText) {
+        url += `?allergies=${encodeURIComponent(activeSearchParams.allergiesText)}`;
       }
       const res = await api.get(url);
-      if (res.success) {
-        setAlternates(res.alternates);
-        setOriginalMed(res.originalMedicine);
-      }
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setLoading(false);
-    }
+      return res.success ? res : null;
+    },
+    enabled: !!activeSearchParams?.medId
+  });
+
+  const alternates = alternatesData?.alternates || [];
+  const originalMed = alternatesData?.originalMedicine || null;
+  const searched = !!activeSearchParams;
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (!selectedMedId) return;
+    setActiveSearchParams({ medId: selectedMedId, allergiesText: allergiesText.trim() });
   };
 
   return (

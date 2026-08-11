@@ -1,36 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React from 'react';
+import { useNotifications, useMarkNotificationsRead } from '../hooks/useNotifications';
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const { data: notificationsData = [], isLoading: loading } = useNotifications();
+  const markAllReadMutation = useMarkNotificationsRead();
 
-  const loadNotifications = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/api/notifications');
-      if (res.success) {
-        setNotifications(res.data);
-        setUnreadCount(res.unreadCount);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadNotifications();
-  }, []);
+  const notifications = notificationsData;
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleMarkAllRead = async () => {
     try {
-      const res = await api.put('/api/notifications/mark-read');
-      if (res.success) {
-        loadNotifications();
-      }
+      await markAllReadMutation.mutateAsync();
     } catch (err) {
       alert(err.message);
     }

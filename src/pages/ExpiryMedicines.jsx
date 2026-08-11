@@ -1,39 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState } from 'react';
+import { useMedicines, useStockOut } from '../hooks/useMedicines';
 
 const ExpiryMedicines = () => {
-  const [medicines, setMedicines] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const loadExpiryData = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/api/medicines?filterAlert=expiring_soon');
-      if (res.success) {
-        setMedicines(res.data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // TanStack Query Hooks
+  const { data: medicinesData = [], isLoading: loading } = useMedicines({ filterAlert: 'expiring_soon' });
+  const stockOutMutation = useStockOut();
 
-  useEffect(() => {
-    loadExpiryData();
-  }, []);
+  const medicines = medicinesData;
 
   const handleDispose = async (id, quantity) => {
     if (window.confirm(`Are you sure you want to log disposal of all ${quantity} units of this expired medicine batch?`)) {
       try {
-        const res = await api.post(`/api/medicines/${id}/stock-out`, {
+        const res = await stockOutMutation.mutateAsync({
+          id,
           quantity,
           reason: 'Disposal of Expired Drug Batch'
         });
         if (res.success) {
           setMessage(`Successfully disposed of expired medicine batch! New stock quantity: ${res.data.quantity}`);
-          loadExpiryData();
           setTimeout(() => setMessage(''), 4000);
         }
       } catch (err) {

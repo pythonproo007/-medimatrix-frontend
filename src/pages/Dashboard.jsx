@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { useDashboardStats } from '../hooks/useDashboard';
+import { usePrescriptions } from '../hooks/usePrescriptions';
+import { useMedicines } from '../hooks/useMedicines';
 
 const Dashboard = ({ setStatsData }) => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
+
+  const { data: statsData, isError: statsError } = useDashboardStats();
+  const { data: prescriptionsData } = usePrescriptions();
+  const { data: lowStockMedsData } = useMedicines({ filterAlert: 'low_stock' });
+
+  const stats = statsData || {
     totalMedicines: 0,
     lowStockCount: 0,
     expiringSoonCount: 0,
@@ -17,48 +24,18 @@ const Dashboard = ({ setStatsData }) => {
     totalPurchasesCount: 0,
     pendingDeliveriesCount: 0,
     totalStockLogsCount: 0
-  });
-
-  const [dbConnected, setDbConnected] = useState(true);
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [lowStockMeds, setLowStockMeds] = useState([]);
-
-  const loadDashboardData = async () => {
-    try {
-      const res = await api.get('/api/dashboard/stats');
-      if (res.success) {
-        setStats(res.data);
-        setStatsData(res.data); // Notify root App for sidebar badges
-        setDbConnected(true);
-      }
-    } catch (err) {
-      setDbConnected(false);
-    }
-
-    try {
-      const resRx = await api.get('/api/prescriptions');
-      if (resRx.success) {
-        setPrescriptions(resRx.data.filter(r => r.status === 'Pending').slice(0, 5));
-      }
-    } catch (err) {
-      console.error(err);
-    }
-
-    try {
-      const resMeds = await api.get('/api/medicines?filterAlert=low_stock');
-      if (resMeds.success) {
-        setLowStockMeds(resMeds.data.slice(0, 5));
-      }
-    } catch (err) {
-      console.error(err);
-    }
   };
 
+  const dbConnected = !statsError;
+  const prescriptions = (prescriptionsData || []).filter(r => r.status === 'Pending').slice(0, 5);
+  const lowStockMeds = (lowStockMedsData || []).slice(0, 5);
+
   useEffect(() => {
-    loadDashboardData();
-    const interval = setInterval(loadDashboardData, 20000);
-    return () => clearInterval(interval);
-  }, []);
+    if (statsData && setStatsData) {
+      setStatsData(statsData);
+    }
+  }, [statsData, setStatsData]);
+
 
   const alertTotal = (stats.lowStockCount || 0) + (stats.expiringSoonCount || 0);
 

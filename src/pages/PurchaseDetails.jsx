@@ -1,12 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState } from 'react';
+import { usePurchases, useSuppliers, useCreatePurchase } from '../hooks/usePurchases';
 
 const PurchaseDetails = () => {
-  const [purchases, setPurchases] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // TanStack Query Hooks
+  const { data: purchasesData = [], isLoading: loading } = usePurchases();
+  const { data: suppliersData = [] } = useSuppliers();
+  const createPurchaseMutation = useCreatePurchase();
+
+  const purchases = purchasesData;
+  const suppliers = suppliersData;
 
   // New Purchase Form state
   const [supplierName, setSupplierName] = useState('');
@@ -18,34 +23,6 @@ const PurchaseDetails = () => {
   const [cartItems, setCartItems] = useState([
     { medicineName: '', medicineType: 'Tablet', category: 'General Healthcare', batchNumber: '', quantity: 100, purchasePrice: '', sellingPrice: '', expiryDate: '' }
   ]);
-
-  const loadPurchases = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/api/purchases');
-      if (res.success) {
-        setPurchases(res.data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadSuppliers = async () => {
-    try {
-      const res = await api.get('/api/purchases/suppliers');
-      if (res.success) setSuppliers(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    loadPurchases();
-    loadSuppliers();
-  }, []);
 
   const handleCartChange = (index, field, value) => {
     const newCart = [...cartItems];
@@ -77,7 +54,7 @@ const PurchaseDetails = () => {
         }
       }
 
-      const res = await api.post('/api/purchases', {
+      const res = await createPurchaseMutation.mutateAsync({
         supplierName,
         supplierPhone,
         supplierInvoiceNo,
@@ -98,8 +75,9 @@ const PurchaseDetails = () => {
         setSupplierPhone('');
         setSupplierInvoiceNo('');
         setNotes('');
-        setCartItems([{ medicineName: '', medicineType: 'Tablet', category: 'General Healthcare', batchNumber: '', quantity: 100, purchasePrice: '', sellingPrice: '', expiryDate: '' }]);
-        loadPurchases();
+        setCartItems([
+          { medicineName: '', medicineType: 'Tablet', category: 'General Healthcare', batchNumber: '', quantity: 100, purchasePrice: '', sellingPrice: '', expiryDate: '' }
+        ]);
         setTimeout(() => setMessage(''), 4000);
       }
     } catch (err) {

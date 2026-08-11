@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState } from 'react';
+import { useOffers, useCreateOffer, useBroadcastOffer } from '../hooks/useOffers';
 
 const DiscountOffers = () => {
-  const [offers, setOffers] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // TanStack Query Hooks
+  const { data: offersData = [], isLoading: loading } = useOffers();
+  const createOfferMutation = useCreateOffer();
+  const broadcastOfferMutation = useBroadcastOffer();
+
+  const offers = offersData;
 
   // Form states
   const [title, setTitle] = useState('');
@@ -16,26 +21,10 @@ const DiscountOffers = () => {
   const [validTill, setValidTill] = useState('');
   const [broadcastNow, setBroadcastNow] = useState(true);
 
-  const loadOffers = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/api/offers');
-      if (res.success) setOffers(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadOffers();
-  }, []);
-
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post('/api/offers', {
+      const res = await createOfferMutation.mutateAsync({
         title,
         code: code.trim().toUpperCase(),
         discountPercentage: Number(discountPercentage),
@@ -51,7 +40,6 @@ const DiscountOffers = () => {
         setCode('');
         setDescription('');
         setValidTill('');
-        loadOffers();
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (err) {
@@ -61,7 +49,7 @@ const DiscountOffers = () => {
 
   const handleBroadcast = async (id) => {
     try {
-      const res = await api.post(`/api/offers/${id}/broadcast`);
+      const res = await broadcastOfferMutation.mutateAsync(id);
       if (res.success) {
         setMessage(res.message);
         setTimeout(() => setMessage(''), 4000);

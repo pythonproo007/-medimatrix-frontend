@@ -1,33 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState } from 'react';
+import { useDeliveries, useUpdateDeliveryStatus } from '../hooks/useDeliveries';
 
 const HomeDelivery = () => {
-  const [deliveries, setDeliveries] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedDel, setSelectedDel] = useState(null);
+
+  // TanStack Query Hooks
+  const { data: deliveriesData = [], isLoading: loading } = useDeliveries();
+  const updateDeliveryStatusMutation = useUpdateDeliveryStatus();
+
+  const deliveries = deliveriesData;
 
   // Form states
   const [deliveryStatus, setDeliveryStatus] = useState('Pending');
   const [deliveryBoyName, setDeliveryBoyName] = useState('');
   const [deliveryBoyPhone, setDeliveryBoyPhone] = useState('');
-
-  const loadDeliveries = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/api/deliveries');
-      if (res.success) setDeliveries(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadDeliveries();
-  }, []);
 
   const handleUpdateClick = (del) => {
     setSelectedDel(del);
@@ -40,15 +28,14 @@ const HomeDelivery = () => {
   const handleStatusSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.put(`/api/deliveries/${selectedDel._id}/status`, {
-        deliveryStatus,
-        deliveryBoyName,
-        deliveryBoyPhone
+      const res = await updateDeliveryStatusMutation.mutateAsync({
+        deliveryId: selectedDel._id,
+        status: deliveryStatus,
+        notes: `${deliveryBoyName} (${deliveryBoyPhone})`
       });
       if (res.success) {
         setMessage(`Delivery status for Invoice ${selectedDel.invoiceNo} successfully updated to "${deliveryStatus}"!`);
         setShowStatusModal(false);
-        loadDeliveries();
         setTimeout(() => setMessage(''), 4000);
       }
     } catch (err) {

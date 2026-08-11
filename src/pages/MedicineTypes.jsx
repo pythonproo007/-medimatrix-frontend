@@ -1,41 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState } from 'react';
+import { useMedicineCategories, useMedicineTypes, useAddCategory, useAddType } from '../hooks/useMedicines';
 
 const MedicineTypes = () => {
-  const [categories, setCategories] = useState([]);
-  const [types, setTypes] = useState([]);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newTypeName, setNewTypeName] = useState('');
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const loadMetadata = async () => {
-    setLoading(true);
-    try {
-      const resCat = await api.get('/api/medicines/categories');
-      const resTypes = await api.get('/api/medicines/types');
-      if (resCat.success) setCategories(resCat.data);
-      if (resTypes.success) setTypes(resTypes.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // TanStack Query Hooks
+  const { data: categoriesData = [], isLoading: catLoading } = useMedicineCategories();
+  const { data: typesData = [], isLoading: typeLoading } = useMedicineTypes();
 
-  useEffect(() => {
-    loadMetadata();
-  }, []);
+  const addCategoryMutation = useAddCategory();
+  const addTypeMutation = useAddType();
+
+  const categories = categoriesData;
+  const types = typesData;
+  const loading = catLoading || typeLoading;
 
   const handleAddCategory = async (e) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
     try {
-      const res = await api.post('/api/medicines/categories', { name: newCategoryName.trim(), description: 'Custom medicine category' });
+      const res = await addCategoryMutation.mutateAsync(newCategoryName.trim());
       if (res.success) {
         setMessage('Category created successfully.');
         setNewCategoryName('');
-        loadMetadata();
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (err) {
@@ -47,11 +36,10 @@ const MedicineTypes = () => {
     e.preventDefault();
     if (!newTypeName.trim()) return;
     try {
-      const res = await api.post('/api/medicines/types', { name: newTypeName.trim(), description: 'Custom dosage form type' });
+      const res = await addTypeMutation.mutateAsync(newTypeName.trim());
       if (res.success) {
         setMessage('Medicine dosage type created successfully.');
         setNewTypeName('');
-        loadMetadata();
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (err) {

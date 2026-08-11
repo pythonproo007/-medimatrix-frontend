@@ -1,18 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import api from '../services/api';
+import {
+  useCustomers,
+  useCustomerHistory,
+  useCreateCustomer,
+  useToggleRegularCustomer,
+  useDeleteCustomer
+} from '../hooks/useCustomers';
 
 const CustomerDetails = () => {
-  const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState('');
   const [regularOnly, setRegularOnly] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showConfirmAdd, setShowConfirmAdd] = useState(false);
 
+  // TanStack Query Hooks
+  const { data: customersData = [], isLoading: loading } = useCustomers(search);
+  const createCustomerMutation = useCreateCustomer();
+  const toggleRegularMutation = useToggleRegularCustomer();
+  const deleteCustomerMutation = useDeleteCustomer();
+
+  const customers = regularOnly ? customersData.filter(c => c.isRegular) : customersData;
+
   // Profile & History Modal State
-  const [historyData, setHistoryData] = useState(null);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [activeCustomerId, setActiveCustomerId] = useState(null);
+  const { data: historyData, isLoading: historyLoading } = useCustomerHistory(activeCustomerId);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -23,26 +36,6 @@ const CustomerDetails = () => {
     allergies: '',
     medicalHistory: ''
   });
-
-  const loadCustomers = async () => {
-    setLoading(true);
-    try {
-      let url = `/api/customers?regularOnly=${regularOnly}`;
-      if (search) url += `&search=${encodeURIComponent(search)}`;
-      const res = await api.get(url);
-      if (res.success) {
-        setCustomers(res.data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadCustomers();
-  }, [search, regularOnly]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -62,7 +55,7 @@ const CustomerDetails = () => {
     setShowConfirmAdd(false);
     try {
       const allergyArr = formData.allergies ? formData.allergies.split(',').map(a => a.trim()).filter(Boolean) : [];
-      const res = await api.post('/api/customers', {
+      const res = await createCustomerMutation.mutateAsync({
         ...formData,
         allergies: allergyArr
       });
@@ -70,7 +63,6 @@ const CustomerDetails = () => {
         setMessage('Customer registered successfully!');
         setShowAddModal(false);
         setFormData({ name: '', phone: '', email: '', address: '', allergies: '', medicalHistory: '' });
-        loadCustomers();
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (err) {
@@ -78,28 +70,15 @@ const CustomerDetails = () => {
     }
   };
 
-  const handleViewCustomerHistory = async (customerId) => {
-    setHistoryLoading(true);
-    try {
-      const res = await api.get(`/api/customers/${customerId}/history`);
-      if (res.success) {
-        setHistoryData(res.data);
-      }
-    } catch (err) {
-      alert(`Could not load customer history: ${err.message}`);
-    } finally {
-      setHistoryLoading(false);
-    }
+  const handleViewCustomerHistory = (customerId) => {
+    setActiveCustomerId(customerId);
   };
 
   const handleToggleRegular = async (id) => {
     try {
-      const res = await api.put(`/api/customers/${id}/toggle-regular`);
+      const res = await toggleRegularMutation.mutateAsync(id);
       if (res.success) {
-        loadCustomers();
-        if (historyData && historyData.customer._id === id) {
-          handleViewCustomerHistory(id);
-        }
+        // Updated via mutation invalidation
       }
     } catch (err) {
       alert(err.message);
@@ -109,11 +88,10 @@ const CustomerDetails = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this customer record?')) {
       try {
-        const res = await api.delete(`/api/customers/${id}`);
+        const res = await deleteCustomerMutation.mutateAsync(id);
         if (res.success) {
           setMessage('Customer record removed.');
-          if (historyData && historyData.customer._id === id) setHistoryData(null);
-          loadCustomers();
+          if (activeCustomerId === id) setActiveCustomerId(null);
           setTimeout(() => setMessage(''), 3000);
         }
       } catch (err) {

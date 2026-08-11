@@ -1,10 +1,14 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useDashboardStats } from '../hooks/useDashboard';
 
-const Sidebar = ({ stats }) => {
+const Sidebar = ({ stats: propStats }) => {
   const { user, logout, shopName } = useAuth();
   const navigate = useNavigate();
+
+  const { data: queryStats } = useDashboardStats();
+  const stats = queryStats || propStats;
 
   const handleLogout = () => {
     logout();

@@ -1,14 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import ProductCard from '../components/ProductCard';
+import { useMedicines } from '../hooks/useMedicines';
+import { useCustomers } from '../hooks/useCustomers';
+import { useSales, useCreateSale, useValidatePromo } from '../hooks/useSales';
 
 const Sales = () => {
   // Main View Mode: 'pos' (POS Checkout Terminal) | 'history' (Sales Transactions & Invoice Records)
   const [activeView, setActiveView] = useState('pos');
-
-  const [medicines, setMedicines] = useState([]);
-  const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState('');
+
+  // TanStack Query Hooks
+  const { data: medicinesData = [] } = useMedicines({ search });
+  const medicines = medicinesData.filter(m => m.quantity > 0);
+
+  const { data: customersData = [] } = useCustomers();
+  const customers = customersData;
+
+  const { data: salesListData = [], isLoading: salesLoading } = useSales();
+  const salesList = salesListData;
+
+  const createSaleMutation = useCreateSale();
+  const validatePromoMutation = useValidatePromo();
 
   // Multi-Tab Billing State (Persisted so draft is never lost)
   const [bills, setBills] = useState(() => {
@@ -47,10 +60,8 @@ const Sales = () => {
   const [showQrModal, setShowQrModal] = useState(false);
 
   // Sales History & Invoice Record state
-  const [salesList, setSalesList] = useState([]);
   const [salesSearch, setSalesSearch] = useState('');
   const [salesPaymentFilter, setSalesPaymentFilter] = useState('');
-  const [salesLoading, setSalesLoading] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
   const currentBill = bills[activeBillIndex] || bills[0];
@@ -62,52 +73,6 @@ const Sales = () => {
     } catch (e) {}
   }, [bills]);
 
-  const loadMeds = async () => {
-    try {
-      let url = '/api/medicines';
-      if (search) url += `?search=${encodeURIComponent(search)}`;
-      const res = await api.get(url);
-      if (res.success) {
-        setMedicines(res.data.filter(m => m.quantity > 0));
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const loadCustomers = async () => {
-    try {
-      const res = await api.get('/api/customers');
-      if (res.success) setCustomers(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const loadSalesHistory = async () => {
-    setSalesLoading(true);
-    try {
-      const res = await api.get('/api/sales');
-      if (res.success) {
-        setSalesList(res.data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSalesLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadMeds();
-    loadCustomers();
-  }, [search]);
-
-  useEffect(() => {
-    if (activeView === 'history') {
-      loadSalesHistory();
-    }
-  }, [activeView]);
 
   // Hook to automatically link customer by typing phone number (PRESERVE customerName!)
   useEffect(() => {
@@ -241,7 +206,7 @@ const Sales = () => {
     if (!currentBill.promoCode.trim()) return;
 
     try {
-      const res = await api.post('/api/offers/validate', { code: currentBill.promoCode.trim() });
+      const res = await validatePromoMutation.mutateAsync(currentBill.promoCode.trim());
       if (res.success) {
         updateCurrentBill({ appliedPromo: res.offer });
         setMessage(`Promo code "${res.offer.code}" applied! (${res.offer.discountPercentage}% Discount)`);
@@ -292,7 +257,7 @@ const Sales = () => {
     setShowConfirmModal(false);
     setLoading(true);
     try {
-      const res = await api.post('/api/sales', {
+      const res = await createSaleMutation.mutateAsync({
         customerName: currentBill.customerName || 'Walk-in Customer',
         customerPhone: currentBill.customerPhone,
         items: currentBill.cart,
@@ -325,10 +290,6 @@ const Sales = () => {
           setBills(filtered);
           setActiveBillIndex(Math.max(0, activeBillIndex - 1));
         }
-
-        loadMeds();
-        loadCustomers();
-        if (activeView === 'history') loadSalesHistory();
 
         // Prompt to view completed invoice
         if (res.data && res.data._id) {

@@ -1,12 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import api from '../services/api';
+import { useMedicines, useStockIn, useStockOut, useCreateMedicine } from '../hooks/useMedicines';
+import { useStockLogs } from '../hooks/useStockLogs';
 
 const StockInOut = () => {
   // Mode: 'in' (Stock In Batches Addition) | 'out' (Stock Out Batches Deduction)
   const [activeTab, setActiveTab] = useState('in');
 
-  const [medicines, setMedicines] = useState([]);
-  const [logs, setLogs] = useState([]);
+  // TanStack Query Hooks
+  const { data: medicinesData = [] } = useMedicines();
+  const { data: stockLogsData = [] } = useStockLogs();
+
+  const stockInMutation = useStockIn();
+  const stockOutMutation = useStockOut();
+  const createMedicineMutation = useCreateMedicine();
+
+  const medicines = medicinesData;
+  const logs = (stockLogsData || []).slice(0, 10);
 
   // Stock IN Form State
   const [inMedName, setInMedName] = useState('');
@@ -31,33 +41,6 @@ const StockInOut = () => {
   // Confirmation Modals (Requirement 4: Don't clear inputs until confirmed)
   const [showConfirmInModal, setShowConfirmInModal] = useState(false);
   const [showConfirmOutModal, setShowConfirmOutModal] = useState(false);
-
-  const fetchMeds = async () => {
-    try {
-      const res = await api.get('/api/medicines');
-      if (res.success) {
-        setMedicines(res.data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchLogs = async () => {
-    try {
-      const res = await api.get('/api/stock-logs');
-      if (res.success) {
-        setLogs(res.data.slice(0, 10));
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    fetchMeds();
-    fetchLogs();
-  }, []);
 
   // Handle manual medicine name input change for Stock IN
   const handleInMedNameChange = (val) => {
@@ -98,7 +81,8 @@ const StockInOut = () => {
       let res;
       if (inMedId) {
         // Update existing medicine stock
-        res = await api.post(`/api/medicines/${inMedId}/stock-in`, {
+        res = await stockInMutation.mutateAsync({
+          id: inMedId,
           quantity: Number(inQty),
           batchNumber: inBatchNo,
           purchasePrice: inPurchasePrice ? Number(inPurchasePrice) : undefined,
@@ -109,7 +93,7 @@ const StockInOut = () => {
         });
       } else {
         // Register new medicine or match by name on backend
-        res = await api.post('/api/medicines', {
+        res = await createMedicineMutation.mutateAsync({
           name: inMedName.trim(),
           quantity: Number(inQty),
           batchNumber: inBatchNo || `BT-${Date.now().toString().slice(-4)}`,
@@ -133,8 +117,6 @@ const StockInOut = () => {
         setInSellingPrice('');
         setInExpiryDate('');
         setInSupplier('');
-        fetchMeds();
-        fetchLogs();
       }
     } catch (err) {
       setError(err.message);
@@ -168,7 +150,8 @@ const StockInOut = () => {
     setShowConfirmOutModal(false);
     setLoading(true);
     try {
-      const res = await api.post(`/api/medicines/${outMedId}/stock-out`, {
+      const res = await stockOutMutation.mutateAsync({
+        id: outMedId,
         quantity: Number(outQty),
         reason: outReason
       });
@@ -176,8 +159,6 @@ const StockInOut = () => {
       if (res.success) {
         setMessage(`Successfully deducted -${outQty} units from ${res.data.name}! Remaining Stock: ${res.data.quantity}`);
         setOutQty('');
-        fetchMeds();
-        fetchLogs();
       }
     } catch (err) {
       setError(err.message);

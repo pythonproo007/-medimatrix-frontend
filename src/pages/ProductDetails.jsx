@@ -1,15 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState } from 'react';
+import {
+  useMedicines,
+  useMedicineCategories,
+  useMedicineTypes,
+  useCreateMedicine,
+  useUpdateMedicine,
+  useDeleteMedicine,
+  useStockOut
+} from '../hooks/useMedicines';
 
 const ProductDetails = () => {
-  const [medicines, setMedicines] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [types, setTypes] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [filterAlert, setFilterAlert] = useState('all'); // 'all', 'low_stock', 'expiring_soon', 'expired'
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+
+  // TanStack Query Hooks
+  const { data: medicinesData = [], isLoading: loading } = useMedicines({ filterAlert, search, category: selectedCategory });
+  const { data: categoriesData = [] } = useMedicineCategories();
+  const { data: typesData = [] } = useMedicineTypes();
+
+  const createMedicineMutation = useCreateMedicine();
+  const updateMedicineMutation = useUpdateMedicine();
+  const deleteMedicineMutation = useDeleteMedicine();
+  const stockOutMutation = useStockOut();
+
+  const medicines = medicinesData;
+  const categories = categoriesData;
+  const types = typesData;
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -40,42 +58,6 @@ const ProductDetails = () => {
     requiresPrescription: false
   });
 
-  const loadMedicines = async () => {
-    setLoading(true);
-    try {
-      let url = `/api/medicines?filterAlert=${filterAlert}`;
-      if (search) url += `&search=${encodeURIComponent(search)}`;
-      if (selectedCategory) url += `&category=${encodeURIComponent(selectedCategory)}`;
-      const res = await api.get(url);
-      if (res.success) {
-        setMedicines(res.data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMetadata = async () => {
-    try {
-      const resCat = await api.get('/api/medicines/categories');
-      const resTypes = await api.get('/api/medicines/types');
-      if (resCat.success) setCategories(resCat.data);
-      if (resTypes.success) setTypes(resTypes.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    loadMedicines();
-  }, [search, selectedCategory, filterAlert]);
-
-  useEffect(() => {
-    loadMetadata();
-  }, []);
-
   const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -87,11 +69,10 @@ const ProductDetails = () => {
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post('/api/medicines', formData);
+      const res = await createMedicineMutation.mutateAsync(formData);
       if (res.success) {
         setMessage('Product batch added successfully!');
         setShowAddModal(false);
-        loadMedicines();
         setFormData({
           name: '', code: '', category: 'Antibiotics', medicineType: 'Tablet', activeIngredient: '',
           manufacturer: '', batchNumber: '', quantity: '', minStockAlert: '15', purchasePrice: '',
@@ -128,11 +109,10 @@ const ProductDetails = () => {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.put(`/api/medicines/${currentMed._id}`, formData);
+      const res = await updateMedicineMutation.mutateAsync({ id: currentMed._id, formData });
       if (res.success) {
         setMessage('Product updated successfully!');
         setShowEditModal(false);
-        loadMedicines();
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (err) {
@@ -143,10 +123,9 @@ const ProductDetails = () => {
   const handleDeleteClick = async (id) => {
     if (window.confirm('Are you sure you want to delete this medicine?')) {
       try {
-        const res = await api.delete(`/api/medicines/${id}`);
+        const res = await deleteMedicineMutation.mutateAsync(id);
         if (res.success) {
           setMessage('Product removed successfully.');
-          loadMedicines();
           setTimeout(() => setMessage(''), 3000);
         }
       } catch (err) {
@@ -166,20 +145,21 @@ const ProductDetails = () => {
     e.preventDefault();
     if (!currentMed) return;
     try {
-      const res = await api.post(`/api/medicines/${currentMed._id}/stock-out`, {
+      const res = await stockOutMutation.mutateAsync({
+        id: currentMed._id,
         quantity: Number(stockOutQty),
         reason: stockOutReason
       });
       if (res.success) {
         setMessage(`Deducted ${stockOutQty} units from ${currentMed.name}`);
         setShowStockOutModal(false);
-        loadMedicines();
         setTimeout(() => setMessage(''), 3000);
       }
     } catch (err) {
       alert(err.message);
     }
   };
+
 
   return (
     <div style={{ padding: '32px' }}>

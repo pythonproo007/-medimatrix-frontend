@@ -1,12 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState } from 'react';
+import { usePrescriptions, useCreatePrescription, useDispensePrescription } from '../hooks/usePrescriptions';
+import { useMedicines } from '../hooks/useMedicines';
 
 const Prescription = () => {
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [medicines, setMedicines] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  // TanStack Query Hooks
+  const { data: prescriptionsData = [], isLoading: loading } = usePrescriptions();
+  const { data: medicinesData = [] } = useMedicines();
+
+  const createPrescriptionMutation = useCreatePrescription();
+  const dispensePrescriptionMutation = useDispensePrescription();
+
+  const prescriptions = prescriptionsData;
+  const medicines = medicinesData;
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -27,32 +35,6 @@ const Prescription = () => {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [discountType, setDiscountType] = useState('none'); // 'none', 'percentage', 'amount'
   const [discountValue, setDiscountValue] = useState('');
-
-  const loadPrescriptions = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/api/prescriptions');
-      if (res.success) setPrescriptions(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMedicines = async () => {
-    try {
-      const res = await api.get('/api/medicines');
-      if (res.success) setMedicines(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    loadPrescriptions();
-    loadMedicines();
-  }, []);
 
   const handleItemChange = (index, field, value) => {
     const newItems = [...items];
@@ -90,7 +72,7 @@ const Prescription = () => {
         }
       }
 
-      const res = await api.post('/api/prescriptions', {
+      const res = await createPrescriptionMutation.mutateAsync({
         doctorName, doctorRegNo, clinicHospital, patientName, patientPhone, notes,
         items: items.map(i => ({ ...i, quantity: Number(i.quantity) }))
       });
@@ -101,7 +83,6 @@ const Prescription = () => {
         // Reset fields
         setDoctorName(''); setDoctorRegNo(''); setClinicHospital(''); setPatientName(''); setPatientPhone(''); setNotes('');
         setItems([{ medicineId: '', medicineName: '', quantity: 10, dosage: '1 tablet daily', duration: '5 days' }]);
-        loadPrescriptions();
         setTimeout(() => setMessage(''), 4000);
       }
     } catch (err) {
@@ -142,16 +123,18 @@ const Prescription = () => {
     setError('');
     setMessage('');
     try {
-      const res = await api.post(`/api/prescriptions/${selectedRx._id}/dispense`, {
-        isHomeDelivery,
-        deliveryAddress,
-        discountType,
-        discountValue: discountValue ? Number(discountValue) : 0
+      const res = await dispensePrescriptionMutation.mutateAsync({
+        rxId: selectedRx._id,
+        dispensePayload: {
+          isHomeDelivery,
+          deliveryAddress,
+          discountType,
+          discountValue: discountValue ? Number(discountValue) : 0
+        }
       });
       if (res.success) {
         setMessage(res.message);
         setShowDispenseModal(false);
-        loadPrescriptions();
         setTimeout(() => setMessage(''), 4000);
       }
     } catch (err) {

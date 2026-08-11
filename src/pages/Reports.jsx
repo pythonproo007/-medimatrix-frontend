@@ -1,31 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState } from 'react';
+import { useSales } from '../hooks/useSales';
+import { usePurchases } from '../hooks/usePurchases';
 
 const Reports = () => {
-  const [sales, setSales] = useState([]);
-  const [purchases, setPurchases] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [timeFilter, setTimeFilter] = useState('all'); // 'all', 'today', 'week', 'month'
   const [search, setSearch] = useState('');
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const resSales = await api.get('/api/sales');
-      const resPurchases = await api.get('/api/purchases');
+  // TanStack Query Hooks
+  const { data: salesData = [], isLoading: salesLoading } = useSales();
+  const { data: purchasesData = [], isLoading: purchasesLoading } = usePurchases();
 
-      if (resSales.success) setSales(resSales.data);
-      if (resPurchases.success) setPurchases(resPurchases.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
+  const sales = salesData;
+  const purchases = purchasesData;
+  const loading = salesLoading || purchasesLoading;
 
   const filterByDate = (items) => {
     if (timeFilter === 'all') return items;
