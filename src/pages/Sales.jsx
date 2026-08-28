@@ -1109,9 +1109,9 @@ const Sales = () => {
                     window.open(completedSaleData.whatsappUrl, '_blank');
                   }
                 }}
-                style={{ flex: 1, background: '#25d366', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '12px', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                style={{ flex: 1, background: '#25d366', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '12px', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               >
-                📱 Send on WhatsApp
+                📱 Send WhatsApp Bill & Feedback Request
               </button>
               <button
                 onClick={() => {
