@@ -89,11 +89,6 @@ const Sidebar = ({ stats: propStats }) => {
           <span>Discount Offers</span>
         </NavLink>
 
-        <NavLink to="/medicine-types" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-          <i className="fa-solid fa-tablets"></i>
-          <span>Medicine Types</span>
-        </NavLink>
-
         <NavLink to="/low-stock" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <i className="fa-solid fa-triangle-exclamation"></i>
           <span>Low Stock Logs</span>
