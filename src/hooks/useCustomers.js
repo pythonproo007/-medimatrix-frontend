@@ -69,7 +69,8 @@ export const useFeedbacks = (search = '', rating = '') => {
 
       const res = await api.get(url);
       return res.success ? { data: res.data || [], meta: res.meta || {} } : { data: [], meta: {} };
-    }
+    },
+    refetchInterval: 5000
   });
 };
 

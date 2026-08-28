@@ -1102,16 +1102,26 @@ const Sales = () => {
               {completedSaleData.whatsappText}
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <button
                 onClick={() => {
                   if (completedSaleData.whatsappUrl) {
                     window.open(completedSaleData.whatsappUrl, '_blank');
                   }
                 }}
-                style={{ flex: 1, background: '#25d366', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '12px', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                style={{ flex: 1, background: '#25d366', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '12px', fontWeight: '700', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               >
-                📱 Send WhatsApp Bill & Feedback Request
+                📱 Send WhatsApp Bill
+              </button>
+              <button
+                onClick={() => {
+                  const link = `${window.location.origin}/customer-feedback?invoice=${completedSaleData.invoiceNo}`;
+                  navigator.clipboard.writeText(link);
+                  alert(`Copied Customer Feedback Link to clipboard:\n${link}`);
+                }}
+                style={{ flex: 1, background: '#0284c7', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '12px', fontWeight: '700', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                🔗 Copy Feedback Link
               </button>
               <button
                 onClick={() => {
@@ -1120,9 +1130,9 @@ const Sales = () => {
                     handleViewInvoice(completedSaleData._id);
                   }
                 }}
-                style={{ flex: 1, background: '#334155', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '12px', fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer' }}
+                style={{ padding: '12px 16px', background: '#334155', color: '#ffffff', border: 'none', borderRadius: '10px', fontWeight: '600', fontSize: '0.85rem', cursor: 'pointer' }}
               >
-                View Full Receipt
+                Receipt
               </button>
             </div>
           </div>

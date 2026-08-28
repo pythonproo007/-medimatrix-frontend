@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const PublicCustomerFeedback = () => {
@@ -7,22 +7,39 @@ const PublicCustomerFeedback = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [invoiceNo, setInvoiceNo] = useState('');
   const [comments, setComments] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  useEffect(() => {
+    // Parse query params from URL e.g. /customer-feedback?invoice=INV-123456&phone=9876543210
+    const params = new URLSearchParams(window.location.search);
+    const invParam = params.get('invoice') || params.get('order') || '';
+    const phoneParam = params.get('phone') || '';
+    const nameParam = params.get('name') || '';
+
+    if (invParam) setInvoiceNo(invParam);
+    if (phoneParam) setPhone(phoneParam);
+    if (nameParam) setName(nameParam);
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!comments.trim()) {
-      setErrorMsg('Please enter your feedback comments.');
+    if (!name.trim()) {
+      setErrorMsg('Please enter your full name.');
       return;
     }
-    if (!name.trim()) {
-      setErrorMsg('Please enter your name.');
+    if (!phone.trim()) {
+      setErrorMsg('Please enter your mobile number.');
+      return;
+    }
+    if (!comments.trim()) {
+      setErrorMsg('Please enter your feedback comments.');
       return;
     }
 
@@ -32,8 +49,10 @@ const PublicCustomerFeedback = () => {
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim(),
+        invoiceNo: invoiceNo.trim(),
         rating,
-        comments: comments.trim()
+        comments: comments.trim(),
+        source: 'Customer Feedback Link'
       });
 
       if (res.data && res.data.success) {
@@ -50,11 +69,11 @@ const PublicCustomerFeedback = () => {
 
   const getRatingLabel = (val) => {
     switch (val) {
-      case 5: return '⭐ Excellent Experience';
-      case 4: return '👍 Good Service';
-      case 3: return '😐 Average Experience';
-      case 2: return '👎 Below Expectation';
-      case 1: return '⚠️ Poor Service';
+      case 5: return '⭐ 5 – Excellent Experience';
+      case 4: return '👍 4 – Good Service';
+      case 3: return '😐 3 – Average Experience';
+      case 2: return '👎 2 – Below Expectation';
+      case 1: return '⚠️ 1 – Very Poor';
       default: return '';
     }
   };
@@ -71,14 +90,14 @@ const PublicCustomerFeedback = () => {
       fontFamily: "'Inter', system-ui, -apple-system, sans-serif"
     }}>
       <div style={{
-        maxWidth: '520px',
+        maxWidth: '540px',
         width: '100%',
-        background: 'rgba(30, 41, 59, 0.85)',
+        background: 'rgba(30, 41, 59, 0.88)',
         backdropFilter: 'blur(16px)',
         border: '1px solid rgba(255, 255, 255, 0.1)',
         borderRadius: '24px',
         padding: '32px 24px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
+        boxShadow: '0 20px 40px rgba(0,0,0,0.45)'
       }}>
         
         {/* Brand Banner */}
@@ -87,46 +106,46 @@ const PublicCustomerFeedback = () => {
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '60px',
-            height: '60px',
+            width: '64px',
+            height: '64px',
             background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-            borderRadius: '16px',
-            fontSize: '1.8rem',
+            borderRadius: '18px',
+            fontSize: '2rem',
             marginBottom: '14px',
             boxShadow: '0 10px 20px rgba(2, 132, 199, 0.35)'
           }}>
             💊
           </div>
-          <h1 style={{ margin: '0 0 6px 0', fontSize: '1.6rem', fontWeight: '800', color: '#ffffff', letterSpacing: '-0.5px' }}>
+          <h1 style={{ margin: '0 0 6px 0', fontSize: '1.65rem', fontWeight: '800', color: '#ffffff', letterSpacing: '-0.5px' }}>
             MediMatrix Pharmacy
           </h1>
           <p style={{ margin: 0, fontSize: '0.88rem', color: '#94a3b8' }}>
-            Customer Feedback & Service Review Portal
+            Customer Feedback & Experience Portal
           </p>
         </div>
 
         {submitted ? (
           <div style={{
-            background: 'rgba(16, 185, 129, 0.1)',
+            background: 'rgba(16, 185, 129, 0.12)',
             border: '1px solid #10b981',
-            borderRadius: '16px',
-            padding: '28px 20px',
+            borderRadius: '18px',
+            padding: '32px 20px',
             textAlign: 'center',
             color: '#34d399'
           }}>
-            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🎉</div>
-            <h2 style={{ margin: '0 0 8px 0', fontSize: '1.3rem', fontWeight: '700', color: '#6ee7b7' }}>
+            <div style={{ fontSize: '3.2rem', marginBottom: '12px' }}>🎉</div>
+            <h2 style={{ margin: '0 0 8px 0', fontSize: '1.35rem', fontWeight: '700', color: '#6ee7b7' }}>
               Thank You for Your Feedback!
             </h2>
             <p style={{ margin: '0 0 20px 0', fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.5' }}>
-              Your feedback has been recorded successfully. We appreciate your response and strive to provide you with the best pharmacy service!
+              Your review has been saved to the MediMatrix Pharmacy database. We appreciate your response and strive to serve you better!
             </p>
             <button
               onClick={() => {
                 setSubmitted(false);
                 setName('');
                 setPhone('');
-                setEmail('');
+                setInvoiceNo('');
                 setComments('');
                 setRating(5);
               }}
@@ -142,7 +161,7 @@ const PublicCustomerFeedback = () => {
                 transition: 'all 0.2s ease'
               }}
             >
-              Submit Another Feedback
+              Submit Another Review
             </button>
           </div>
         ) : (
@@ -155,16 +174,17 @@ const PublicCustomerFeedback = () => {
                 color: '#fca5a5',
                 padding: '12px 14px',
                 borderRadius: '10px',
-                fontSize: '0.85rem'
+                fontSize: '0.86rem',
+                lineHeight: '1.4'
               }}>
                 ⚠️ {errorMsg}
               </div>
             )}
 
             {/* Rating Selector */}
-            <div style={{ textAlign: 'center', background: 'rgba(15, 23, 42, 0.6)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '8px' }}>
-                Rate Your Experience
+            <div style={{ textAlign: 'center', background: 'rgba(15, 23, 42, 0.6)', padding: '18px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', color: '#cbd5e1', marginBottom: '8px' }}>
+                Rate Your Pharmacy Experience *
               </label>
               
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '8px' }}>
@@ -178,7 +198,7 @@ const PublicCustomerFeedback = () => {
                     style={{
                       background: 'none',
                       border: 'none',
-                      fontSize: '2.2rem',
+                      fontSize: '2.4rem',
                       cursor: 'pointer',
                       color: star <= (hoverRating || rating) ? '#fbbf24' : '#475569',
                       transition: 'transform 0.15s ease, color 0.15s ease',
@@ -190,47 +210,23 @@ const PublicCustomerFeedback = () => {
                   </button>
                 ))}
               </div>
-              <div style={{ fontSize: '0.82rem', fontWeight: '600', color: '#fbbf24' }}>
+              <div style={{ fontSize: '0.84rem', fontWeight: '700', color: '#fbbf24' }}>
                 {getRatingLabel(hoverRating || rating)}
               </div>
             </div>
 
-            {/* Name Input */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
-                Your Name *
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                placeholder="e.g. John Doe"
-                style={{
-                  width: '100%',
-                  padding: '12px 14px',
-                  background: 'rgba(15, 23, 42, 0.8)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  borderRadius: '10px',
-                  color: '#fff',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            {/* Phone & Email Inputs */}
+            {/* Name & Phone Input Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
-                  Phone Number
+                  Customer Name *
                 </label>
                 <input
                   type="text"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="e.g. 9876543210"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  placeholder="e.g. John Doe"
                   style={{
                     width: '100%',
                     padding: '12px 14px',
@@ -247,7 +243,57 @@ const PublicCustomerFeedback = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
-                  Email (Optional)
+                  Mobile Number *
+                </label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  placeholder="e.g. 9876543210"
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    background: 'rgba(15, 23, 42, 0.8)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '10px',
+                    color: '#fff',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Invoice/Order ID & Email */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
+                  Order / Purchase ID
+                </label>
+                <input
+                  type="text"
+                  value={invoiceNo}
+                  onChange={(e) => setInvoiceNo(e.target.value)}
+                  placeholder="e.g. INV-1001"
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    background: 'rgba(15, 23, 42, 0.8)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '10px',
+                    color: '#fff',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
+                  Email Address (Optional)
                 </label>
                 <input
                   type="email"
@@ -272,14 +318,14 @@ const PublicCustomerFeedback = () => {
             {/* Feedback Comments */}
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
-                Your Comments & Feedback *
+                Your Feedback & Comments *
               </label>
               <textarea
                 value={comments}
                 onChange={(e) => setComments(e.target.value)}
                 required
                 rows={4}
-                placeholder="Tell us about your experience, staff service, medicine availability..."
+                placeholder="Share details about staff service, medicine availability, waiting time..."
                 style={{
                   width: '100%',
                   padding: '12px 14px',
@@ -314,13 +360,13 @@ const PublicCustomerFeedback = () => {
                 transition: 'all 0.2s ease'
               }}
             >
-              {loading ? 'Submitting Feedback...' : 'Submit Feedback ⭐'}
+              {loading ? 'Submitting Review...' : 'Submit Feedback ⭐'}
             </button>
           </form>
         )}
 
         <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.75rem', color: '#64748b' }}>
-          MediMatrix Pharmacy • Customer Service Department
+          MediMatrix Pharmacy • Verified Customer Review System
         </div>
 
       </div>

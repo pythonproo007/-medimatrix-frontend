@@ -95,6 +95,23 @@ const CustomerFeedback = () => {
     return 'danger';
   };
 
+  // Share Feedback Link Modal State
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareInvoice, setShareInvoice] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const getShareableLink = (inv) => {
+    const origin = window.location.origin;
+    return inv.trim() ? `${origin}/customer-feedback?invoice=${encodeURIComponent(inv.trim())}` : `${origin}/customer-feedback`;
+  };
+
+  const handleCopyLink = (inv) => {
+    const link = getShareableLink(inv);
+    navigator.clipboard.writeText(link);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2500);
+  };
+
   return (
     <div style={{ padding: '32px' }}>
       
@@ -103,30 +120,52 @@ const CustomerFeedback = () => {
         <div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: '700', color: '#fff', margin: 0 }}>Pharmacist Customer Feedback Dashboard</h2>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
-            Store-level customer ratings, WhatsApp poll responses, and service review analytics
+            Store-level customer ratings, real-time feedback stream, and service review analytics
           </p>
         </div>
 
-        <button
-          onClick={() => setShowLogModal(true)}
-          style={{
-            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '10px',
-            padding: '10px 18px',
-            fontSize: '0.85rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-        >
-          <i className="fa-brands fa-whatsapp" style={{ fontSize: '1.1rem', color: '#22c55e' }}></i>
-          Log WhatsApp Customer Rating
-        </button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setShowShareModal(true)}
+            style={{
+              background: 'rgba(2, 132, 199, 0.15)',
+              color: '#38bdf8',
+              border: '1px solid #0284c7',
+              borderRadius: '10px',
+              padding: '10px 16px',
+              fontSize: '0.85rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <i className="fa-solid fa-share-nodes"></i>
+            Share Feedback Link
+          </button>
+
+          <button
+            onClick={() => setShowLogModal(true)}
+            style={{
+              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '10px',
+              padding: '10px 18px',
+              fontSize: '0.85rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <i className="fa-brands fa-whatsapp" style={{ fontSize: '1.1rem', color: '#22c55e' }}></i>
+            Log WhatsApp Customer Rating
+          </button>
+        </div>
       </div>
 
       {message && (
@@ -403,6 +442,69 @@ const CustomerFeedback = () => {
               </div>
 
             </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* Share Feedback Link Modal */}
+      {showShareModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: '#1e293b', color: '#fff', border: '1px solid #334155', borderRadius: '16px', padding: '28px', maxWidth: '480px', width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '700', color: '#0284c7', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🔗 Shareable Customer Feedback Link
+              </h3>
+              <button onClick={() => setShowShareModal(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.4rem', cursor: 'pointer' }}>&times;</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: '600', display: 'block', marginBottom: '4px' }}>
+                  Order / Invoice ID (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. INV-1001 (Leave empty for general link)"
+                  value={shareInvoice}
+                  onChange={(e) => setShareInvoice(e.target.value)}
+                  style={{ width: '100%', padding: '10px', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff', fontSize: '0.88rem', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: '600', display: 'block', marginBottom: '4px' }}>
+                  Direct Shareable URL:
+                </label>
+                <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '10px', fontSize: '0.82rem', color: '#38bdf8', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                  {getShareableLink(shareInvoice)}
+                </div>
+              </div>
+
+              {copySuccess && (
+                <div style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '8px 12px', borderRadius: '6px', fontSize: '0.82rem', textAlign: 'center' }}>
+                  ✅ Shareable feedback link copied to clipboard!
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => handleCopyLink(shareInvoice)}
+                  style={{ flex: 1, padding: '12px', background: '#0284c7', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                >
+                  📋 Copy Feedback Link
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowShareModal(false)}
+                  style={{ padding: '12px 20px', background: '#334155', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
 
           </div>
         </div>
