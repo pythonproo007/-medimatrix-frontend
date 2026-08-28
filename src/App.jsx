@@ -27,6 +27,7 @@ import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import CustomerFeedback from './pages/CustomerFeedback';
 import CustomerPortal from './pages/CustomerPortal';
+import PublicCustomerFeedback from './pages/PublicCustomerFeedback';
 
 const Layout = ({ children, stats, pageTitle }) => {
   return (
@@ -52,6 +53,8 @@ const App = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/customer-portal" element={<CustomerPortal />} />
+          <Route path="/customer-feedback" element={<PublicCustomerFeedback />} />
+          <Route path="/feedback-portal" element={<PublicCustomerFeedback />} />
           
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Layout stats={stats} pageTitle="Dashboard Control Center"><Dashboard setStatsData={setStats} /></Layout>} />
