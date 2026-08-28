@@ -64,6 +64,11 @@ const Sidebar = ({ stats: propStats }) => {
           <span>Customers</span>
         </NavLink>
 
+        <NavLink to="/feedback" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          <i className="fa-solid fa-star"></i>
+          <span>Pharmacist Feedback</span>
+        </NavLink>
+
         <NavLink to="/stock-details" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <i className="fa-solid fa-boxes-stacked"></i>
           <span>Stock movement</span>

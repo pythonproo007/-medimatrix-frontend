@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { useCustomers, useFeedbacks, useSubmitFeedback, useDeleteFeedback } from '../hooks/useCustomers';
+import { useFeedbacks, useSubmitFeedback, useDeleteFeedback } from '../hooks/useCustomers';
 
 const CustomerFeedback = () => {
   const [search, setSearch] = useState('');
   const [selectedRatingFilter, setSelectedRatingFilter] = useState('');
-  const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
   // Queries & Mutations
-  const { data: customersData = [] } = useCustomers('');
-  const { data: feedbackQueryData, isLoading } = useFeedbacks(search, selectedRatingFilter);
+  const { data: feedbackQueryData, isLoading: loading } = useFeedbacks(search, selectedRatingFilter);
   const submitFeedbackMutation = useSubmitFeedback();
   const deleteFeedbackMutation = useDeleteFeedback();
 
@@ -21,63 +21,45 @@ const CustomerFeedback = () => {
     ratingBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
   };
 
-  // Form State for Submit Feedback
-  const [selectedCustomer, setSelectedCustomer] = useState('');
-  const [rating, setRating] = useState(5);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [comments, setComments] = useState('');
+  // Log WhatsApp Poll Rating State
+  const [logName, setLogName] = useState('');
+  const [logPhone, setLogPhone] = useState('');
+  const [logInvoiceNo, setLogInvoiceNo] = useState('');
+  const [logRating, setLogRating] = useState(5);
+  const [logComments, setLogComments] = useState('');
 
-  const handleCustomerSelect = (e) => {
-    const custId = e.target.value;
-    setSelectedCustomer(custId);
-    if (custId) {
-      const found = customersData.find((c) => c._id === custId);
-      if (found) {
-        setName(found.name);
-        setPhone(found.phone);
-        setEmail(found.email || '');
-      }
-    } else {
-      setName('');
-      setPhone('');
-      setEmail('');
-    }
-  };
-
-  const handleSubmit = async (e) => {
+  const handleLogSubmit = async (e) => {
     e.preventDefault();
-    if (!comments.trim()) {
-      alert('Please enter feedback comments.');
+    setError('');
+    setMessage('');
+
+    if (!logRating) {
+      alert('Please select a star rating.');
       return;
     }
 
     try {
       const res = await submitFeedbackMutation.mutateAsync({
-        customerId: selectedCustomer || null,
-        name: name.trim() || 'Walk-in Customer',
-        phone: phone.trim(),
-        email: email.trim(),
-        rating,
-        comments: comments.trim()
+        name: logName.trim() || 'WhatsApp Customer',
+        phone: logPhone.trim(),
+        invoiceNo: logInvoiceNo.trim(),
+        rating: Number(logRating),
+        comments: logComments.trim() || 'WhatsApp Rating Poll Response',
+        source: 'WhatsApp Poll'
       });
 
       if (res.success) {
-        setSuccessMessage('Feedback logged successfully!');
-        setShowSubmitModal(false);
-        // Reset form
-        setSelectedCustomer('');
-        setRating(5);
-        setName('');
-        setPhone('');
-        setEmail('');
-        setComments('');
-        setTimeout(() => setSuccessMessage(''), 3000);
+        setMessage('WhatsApp customer rating logged successfully!');
+        setShowLogModal(false);
+        setLogName('');
+        setLogPhone('');
+        setLogInvoiceNo('');
+        setLogRating(5);
+        setLogComments('');
+        setTimeout(() => setMessage(''), 3000);
       }
     } catch (err) {
-      alert(err.message || 'Failed to submit feedback');
+      setError(err.message || 'Failed to log feedback');
     }
   };
 
@@ -86,8 +68,8 @@ const CustomerFeedback = () => {
       try {
         const res = await deleteFeedbackMutation.mutateAsync(id);
         if (res.success) {
-          setSuccessMessage('Feedback entry removed.');
-          setTimeout(() => setSuccessMessage(''), 3000);
+          setMessage('Feedback entry removed.');
+          setTimeout(() => setMessage(''), 3000);
         }
       } catch (err) {
         alert(err.message || 'Failed to delete feedback');
@@ -95,357 +77,333 @@ const CustomerFeedback = () => {
     }
   };
 
-  const getRatingLabel = (val) => {
-    switch (val) {
-      case 5: return '5 - Excellent';
-      case 4: return '4 - Good';
-      case 3: return '3 - Average';
-      case 2: return '2 - Fair';
-      case 1: return '1 - Poor';
-      default: return '';
-    }
-  };
-
-  const renderStars = (starCount) => {
+  const renderStars = (ratingVal) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
       stars.push(
-        <i
-          key={i}
-          className={`fa-solid fa-star ${i <= starCount ? 'star-gold' : 'star-gray'}`}
-          style={{ color: i <= starCount ? '#f59e0b' : 'rgba(255,255,255,0.2)', marginRight: '2px' }}
-        ></i>
+        <span key={i} style={{ color: i <= ratingVal ? '#fbbf24' : '#475569', fontSize: '1.1rem', marginRight: '2px' }}>
+          ★
+        </span>
       );
     }
     return stars;
   };
 
-  const breakdown = meta.ratingBreakdown || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const getRatingBadgeClass = (val) => {
+    if (val >= 4) return 'success';
+    if (val === 3) return 'warning';
+    return 'danger';
+  };
 
   return (
     <div style={{ padding: '32px' }}>
       
-      {/* Top Header */}
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: '700', color: '#fff', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <i className="fa-solid fa-star" style={{ color: '#f59e0b' }}></i>
-            Customer Feedback & Reviews Hub
-          </h2>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-            Track patient satisfaction metrics, service reviews, rating distribution, and log customer feedback
+          <h2 style={{ fontSize: '1.4rem', fontWeight: '700', color: '#fff', margin: 0 }}>Pharmacist Customer Feedback Dashboard</h2>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+            Store-level customer ratings, WhatsApp poll responses, and service review analytics
           </p>
         </div>
+
         <button
-          onClick={() => setShowSubmitModal(true)}
-          className="btn-pos-checkout"
-          style={{ width: 'auto', padding: '10px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+          onClick={() => setShowLogModal(true)}
+          style={{
+            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '10px',
+            padding: '10px 18px',
+            fontSize: '0.85rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
         >
-          <i className="fa-solid fa-comment-medical"></i> Log Customer Feedback
+          <i className="fa-brands fa-whatsapp" style={{ fontSize: '1.1rem', color: '#22c55e' }}></i>
+          Log WhatsApp Customer Rating
         </button>
       </div>
 
-      {successMessage && (
-        <div style={{ background: 'var(--emerald-light)', border: '1px solid var(--emerald)', color: 'var(--emerald)', padding: '12px 16px', borderRadius: 'var(--radius-sm)', marginBottom: '20px', fontSize: '0.9rem' }}>
-          <i className="fa-solid fa-circle-check" style={{ marginRight: '8px' }}></i> {successMessage}
+      {message && (
+        <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#34d399', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.88rem' }}>
+          ✅ {message}
         </div>
       )}
 
-      {/* Satisfaction Analytics Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '28px' }}>
+      {/* Analytics Summary Bar */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
         
-        {/* Average Rating */}
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Overall Satisfaction</span>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginTop: '10px' }}>
-            <span style={{ fontSize: '2.4rem', fontWeight: '800', color: '#fff' }}>{meta.averageRating || '0.0'}</span>
-            <span style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>/ 5.0</span>
+        {/* Card 1: Average Rating */}
+        <div style={{ background: 'var(--bg-surface)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ background: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', width: '56px', height: '56px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem' }}>
+            ★
           </div>
-          <div style={{ marginTop: '8px', fontSize: '1.1rem' }}>
-            {renderStars(Math.round(meta.averageRating || 0))}
-          </div>
-        </div>
-
-        {/* Total Reviews */}
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Reviews Logged</span>
-          <div style={{ fontSize: '2.4rem', fontWeight: '800', color: '#38bdf8', marginTop: '10px' }}>
-            {meta.totalCount}
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '8px' }}>
-            <i className="fa-solid fa-users" style={{ marginRight: '6px' }}></i> Patient feedback entries
+          <div>
+            <div style={{ fontSize: '1.7rem', fontWeight: '800', color: '#fff', lineHeight: 1.1 }}>
+              {meta.averageRating || '0.0'} <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>/ 5.0</span>
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>Average Rating Score</div>
           </div>
         </div>
 
-        {/* Positive Sentiment % */}
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Positive Sentiment</span>
-          <div style={{ fontSize: '2.4rem', fontWeight: '800', color: '#10b981', marginTop: '10px' }}>
-            {meta.positivePercentage}%
+        {/* Card 2: Total Ratings */}
+        <div style={{ background: 'var(--bg-surface)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ background: 'rgba(2, 132, 199, 0.15)', color: '#38bdf8', width: '56px', height: '56px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
+            <i className="fa-solid fa-comments"></i>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '8px' }}>
-            <i className="fa-solid fa-thumbs-up" style={{ marginRight: '6px', color: '#10b981' }}></i> 4 & 5 Star ratings
+          <div>
+            <div style={{ fontSize: '1.7rem', fontWeight: '800', color: '#fff', lineHeight: 1.1 }}>
+              {meta.totalCount}
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>Total Ratings Received</div>
           </div>
         </div>
 
-        {/* Rating Breakdown */}
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '16px 20px', gridColumn: 'span 1' }}>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Rating Breakdown</span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {[5, 4, 3, 2, 1].map((starNum) => {
-              const count = breakdown[starNum] || 0;
-              const pct = meta.totalCount > 0 ? (count / meta.totalCount) * 100 : 0;
-              return (
-                <div key={starNum} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem' }}>
-                  <span style={{ color: 'var(--text-muted)', width: '24px' }}>{starNum}★</span>
-                  <div style={{ flex: 1, background: 'rgba(255,255,255,0.06)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
-                    <div style={{ width: `${pct}%`, background: starNum >= 4 ? '#10b981' : starNum === 3 ? '#f59e0b' : '#ef4444', height: '100%', borderRadius: '4px', transition: 'width 0.3s' }}></div>
-                  </div>
-                  <span style={{ color: 'var(--text-dim)', width: '20px', textAlign: 'right' }}>{count}</span>
-                </div>
-              );
-            })}
+        {/* Card 3: Satisfaction Rate */}
+        <div style={{ background: 'var(--bg-surface)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', width: '56px', height: '56px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
+            <i className="fa-solid fa-face-smile"></i>
+          </div>
+          <div>
+            <div style={{ fontSize: '1.7rem', fontWeight: '800', color: '#4ade80', lineHeight: 1.1 }}>
+              {meta.positivePercentage}%
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>4★ & 5★ Satisfaction</div>
           </div>
         </div>
 
       </div>
 
-      {/* Filters & Search Toolbar */}
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', background: 'var(--bg-surface)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', alignItems: 'center', flexWrap: 'wrap' }}>
+      {/* Star Breakdown Card */}
+      <div style={{ background: 'var(--bg-surface)', padding: '20px 24px', borderRadius: '16px', border: '1px solid var(--border-color)', marginBottom: '28px' }}>
+        <h4 style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: '#fff', fontWeight: '700' }}>
+          📊 Customer Rating Poll Breakdown (1 to 5 Stars)
+        </h4>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
+          {[5, 4, 3, 2, 1].map((starVal) => {
+            const count = meta.ratingBreakdown?.[starVal] || 0;
+            const pct = meta.totalCount > 0 ? Math.round((count / meta.totalCount) * 100) : 0;
+            return (
+              <div key={starVal} style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: '600', color: '#fff', marginBottom: '6px' }}>
+                  <span>{starVal} Stars ⭐</span>
+                  <span style={{ color: '#fbbf24' }}>{count} ({pct}%)</span>
+                </div>
+                <div style={{ width: '100%', background: 'rgba(255,255,255,0.1)', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ width: `${pct}%`, background: starVal >= 4 ? '#22c55e' : starVal === 3 ? '#eab308' : '#ef4444', height: '100%', borderRadius: '3px' }}></div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Filter toolbar */}
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', background: 'var(--bg-surface)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '250px' }}>
-          <input
-            type="text"
-            placeholder="Search by customer name, phone number, or feedback text..."
+          <input 
+            type="text" 
+            placeholder="Search by customer name, order ID, phone, comments..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: '100%', padding: '10px 16px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff' }}
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <label style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Filter Rating:</label>
-          <select
-            value={selectedRatingFilter}
-            onChange={(e) => setSelectedRatingFilter(e.target.value)}
-            style={{ padding: '10px 14px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff', cursor: 'pointer' }}
-          >
-            <option value="">All Star Ratings</option>
-            <option value="5">5 Stars (Excellent)</option>
-            <option value="4">4 Stars (Good)</option>
-            <option value="3">3 Stars (Average)</option>
-            <option value="2">2 Stars (Fair)</option>
-            <option value="1">1 Star (Poor)</option>
-          </select>
-        </div>
+        <select 
+          value={selectedRatingFilter} 
+          onChange={(e) => setSelectedRatingFilter(e.target.value)}
+          style={{ padding: '10px 16px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff', minWidth: '180px' }}
+        >
+          <option value="">All Ratings (1 - 5 Stars)</option>
+          <option value="5">⭐⭐⭐⭐⭐ 5 Stars (Excellent)</option>
+          <option value="4">⭐⭐⭐⭐ 4 Stars (Good)</option>
+          <option value="3">⭐⭐⭐ 3 Stars (Average)</option>
+          <option value="2">⭐⭐ 2 Stars (Poor)</option>
+          <option value="1">⭐ 1 Star (Very Poor)</option>
+        </select>
       </div>
 
-      {/* Feedbacks Grid */}
-      {isLoading ? (
-        <div style={{ textAlign: 'center', padding: '60px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-          <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '1.5rem', marginBottom: '10px' }}></i>
-          <p>Loading customer reviews...</p>
-        </div>
-      ) : feedbacks.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-          <i className="fa-solid fa-comment-slash" style={{ fontSize: '2rem', marginBottom: '12px', color: 'var(--text-dim)' }}></i>
-          <p style={{ fontSize: '1rem', color: '#fff', marginBottom: '6px' }}>No customer feedback found</p>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>Log feedback using the "+ Log Customer Feedback" button above.</p>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
-          {feedbacks.map((item) => (
-            <div
-              key={item._id}
-              style={{
-                background: 'var(--bg-surface)',
-                border: '1px solid var(--border-color)',
-                borderRadius: 'var(--radius-md)',
-                padding: '20px',
-                display: 'flex',
-                flexDirection: 'column',
-                justify: 'space-between',
-                position: 'relative'
-              }}
-            >
-              <div>
-                {/* Header info */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                  <div>
-                    <h3 style={{ color: '#fff', fontSize: '1rem', fontWeight: '600', margin: 0 }}>{item.name}</h3>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      {item.phone && <span><i className="fa-solid fa-phone" style={{ marginRight: '4px' }}></i>{item.phone}</span>}
-                      {item.email && <span><i className="fa-solid fa-envelope" style={{ marginRight: '4px' }}></i>{item.email}</span>}
+      {/* Ratings Table */}
+      <div style={{ background: 'var(--bg-surface)', padding: '24px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', overflowX: 'auto' }}>
+        <table className="inventory-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              <th style={{ padding: '12px 10px' }}>Date & Time</th>
+              <th style={{ padding: '12px 10px' }}>Customer Name</th>
+              <th style={{ padding: '12px 10px' }}>Order / Invoice ID</th>
+              <th style={{ padding: '12px 10px' }}>Rating (1–5 Stars)</th>
+              <th style={{ padding: '12px 10px' }}>Customer Feedback & Comments</th>
+              <th style={{ padding: '12px 10px' }}>Source</th>
+              <th style={{ padding: '12px 10px', textAlign: 'center' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                  <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '8px' }}></i> Loading feedback ratings...
+                </td>
+              </tr>
+            ) : feedbacks.length === 0 ? (
+              <tr>
+                <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                  No customer ratings found matching your search.
+                </td>
+              </tr>
+            ) : (
+              feedbacks.map((item) => (
+                <tr key={item._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.88rem' }}>
+                  <td style={{ padding: '12px 10px', color: 'var(--text-dim)', fontSize: '0.82rem' }}>
+                    {new Date(item.createdAt).toLocaleString()}
+                  </td>
+                  <td style={{ padding: '12px 10px', color: '#fff', fontWeight: '600' }}>
+                    {item.name || 'Customer'}
+                    {item.phone && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>📱 {item.phone}</div>}
+                  </td>
+                  <td style={{ padding: '12px 10px' }}>
+                    <span style={{ background: 'rgba(2, 132, 199, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600' }}>
+                      {item.invoiceNo || 'Direct'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px 10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className={`badge ${getRatingBadgeClass(item.rating)}`}>
+                        {item.rating} / 5
+                      </span>
+                      <div>{renderStars(item.rating)}</div>
                     </div>
-                    {item.invoiceNo && (
-                      <div style={{ fontSize: '0.78rem', color: '#38bdf8', marginTop: '4px', fontWeight: '600' }}>
-                        <i className="fa-solid fa-file-invoice" style={{ marginRight: '4px' }}></i>Bill / Order #{item.invoiceNo}
-                      </div>
-                    )}
-                  </div>
-                  <span
-                    className={`badge ${item.customerId?.isRegular ? 'success' : 'info'}`}
-                    style={{ fontSize: '0.7rem', padding: '2px 8px' }}
-                  >
-                    {item.customerId?.isRegular ? 'Regular Member' : 'Walk-in'}
-                  </span>
-                </div>
+                  </td>
+                  <td style={{ padding: '12px 10px', color: '#cbd5e1', maxWidth: '280px', lineHeight: '1.4', fontSize: '0.84rem' }}>
+                    {item.comments}
+                  </td>
+                  <td style={{ padding: '12px 10px' }}>
+                    <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '2px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '600' }}>
+                      💬 {item.source || 'WhatsApp Poll'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px 10px', textAlign: 'center' }}>
+                    <button
+                      onClick={() => handleDelete(item._id)}
+                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1rem' }}
+                      title="Delete Feedback Entry"
+                    >
+                      <i className="fa-solid fa-trash-can"></i>
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
-                {/* Rating stars */}
-                <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ fontSize: '1rem' }}>{renderStars(item.rating)}</div>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '600' }}>({item.rating}/5)</span>
-                </div>
-
-                {/* Comments box */}
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderLeft: '3px solid var(--primary)', padding: '12px', borderRadius: '4px', fontSize: '0.88rem', color: '#e2e8f0', lineHeight: '1.4', marginBottom: '16px' }}>
-                  "{item.comments}"
-                </div>
-              </div>
-
-              {/* Footer date & delete */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-                <span>
-                  <i className="fa-regular fa-clock" style={{ marginRight: '6px' }}></i>
-                  {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-                <button
-                  onClick={() => handleDelete(item._id)}
-                  className="badge danger"
-                  style={{ border: 'none', cursor: 'pointer', padding: '4px 8px', fontSize: '0.75rem' }}
-                  title="Delete Feedback"
-                >
-                  <i className="fa-solid fa-trash" style={{ marginRight: '4px' }}></i> Delete
-                </button>
-              </div>
-
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Submit Feedback Modal */}
-      {showSubmitModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', padding: '32px', borderRadius: 'var(--radius-lg)', width: '520px', maxWidth: '100%' }}>
+      {/* Log WhatsApp Rating Modal */}
+      {showLogModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: '#1e293b', color: '#fff', border: '1px solid #334155', borderRadius: '16px', padding: '28px', maxWidth: '460px', width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                <i className="fa-solid fa-comment-medical" style={{ color: 'var(--primary)' }}></i>
-                Log Patient Feedback & Review
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '700', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fa-brands fa-whatsapp"></i> Log WhatsApp Rating Poll Response
               </h3>
-              <button onClick={() => setShowSubmitModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.2rem' }}>&times;</button>
+              <button onClick={() => setShowLogModal(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.4rem', cursor: 'pointer' }}>&times;</button>
             </div>
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {error && (
+              <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '10px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.84rem' }}>
+                ⚠️ {error}
+              </div>
+            )}
+
+            <form onSubmit={handleLogSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               
-              {/* Select Registered Customer */}
-              <div className="form-group">
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', display: 'block' }}>Select Registered Customer (Optional)</label>
-                <select
-                  value={selectedCustomer}
-                  onChange={handleCustomerSelect}
-                  style={{ width: '100%', padding: '10px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff' }}
-                >
-                  <option value="">-- Walk-in / Unregistered Customer --</option>
-                  {customersData.map((c) => (
-                    <option key={c._id} value={c._id}>{c.name} ({c.phone})</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Star Rating Picker */}
-              <div className="form-group">
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>Rating</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ display: 'flex', gap: '6px', fontSize: '1.6rem', cursor: 'pointer' }}>
-                    {[1, 2, 3, 4, 5].map((starVal) => {
-                      const active = (hoverRating || rating) >= starVal;
-                      return (
-                        <i
-                          key={starVal}
-                          className={`fa-solid fa-star`}
-                          style={{ color: active ? '#f59e0b' : 'rgba(255,255,255,0.2)', transition: 'color 0.15s' }}
-                          onClick={() => setRating(starVal)}
-                          onMouseEnter={() => setHoverRating(starVal)}
-                          onMouseLeave={() => setHoverRating(0)}
-                        ></i>
-                      );
-                    })}
-                  </div>
-                  <span style={{ fontSize: '0.85rem', color: '#f59e0b', fontWeight: '600' }}>
-                    {getRatingLabel(hoverRating || rating)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Name & Contact */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div className="form-group">
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Customer Name</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. John Smith"
-                    style={{ width: '100%', padding: '10px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff' }}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Phone Number</label>
-                  <input
-                    type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="e.g. +1 555-0199"
-                    style={{ width: '100%', padding: '10px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff' }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Email Address (Optional)</label>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: '600', display: 'block', marginBottom: '4px' }}>Customer Mobile Number</label>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. customer@example.com"
-                  style={{ width: '100%', padding: '10px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff' }}
+                  type="text"
+                  placeholder="e.g. 9876543210"
+                  value={logPhone}
+                  onChange={(e) => setLogPhone(e.target.value)}
+                  style={{ width: '100%', padding: '10px', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff', fontSize: '0.88rem', boxSizing: 'border-box' }}
                 />
               </div>
 
-              {/* Comments */}
-              <div className="form-group">
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>Comments / Review Details *</label>
-                <textarea
-                  value={comments}
-                  onChange={(e) => setComments(e.target.value)}
-                  rows="4"
-                  required
-                  placeholder="Enter patient comments, prescription fulfillment service feedback, delivery notes, etc..."
-                  style={{ width: '100%', padding: '10px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff', resize: 'none' }}
-                ></textarea>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: '600', display: 'block', marginBottom: '4px' }}>Order / Invoice ID</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. INV-994821"
+                    value={logInvoiceNo}
+                    onChange={(e) => setLogInvoiceNo(e.target.value)}
+                    style={{ width: '100%', padding: '10px', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff', fontSize: '0.88rem', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: '600', display: 'block', marginBottom: '4px' }}>Customer Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. John Doe"
+                    value={logName}
+                    onChange={(e) => setLogName(e.target.value)}
+                    style={{ width: '100%', padding: '10px', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff', fontSize: '0.88rem', boxSizing: 'border-box' }}
+                  />
+                </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: '#fbbf24', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Select WhatsApp Rating (1 to 5 Stars) *</label>
+                <select
+                  value={logRating}
+                  onChange={(e) => setLogRating(e.target.value)}
+                  required
+                  style={{ width: '100%', padding: '10px', background: '#0f172a', border: '1px solid #fbbf24', borderRadius: '8px', color: '#fff', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                >
+                  <option value="5">⭐⭐⭐⭐⭐ 5 – Excellent</option>
+                  <option value="4">⭐⭐⭐⭐ 4 – Good</option>
+                  <option value="3">⭐⭐⭐ 3 – Average</option>
+                  <option value="2">⭐⭐ 2 – Poor</option>
+                  <option value="1">⭐ 1 – Very Poor</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: '600', display: 'block', marginBottom: '4px' }}>Customer Feedback Comments</label>
+                <textarea
+                  rows={3}
+                  placeholder="Enter comments sent by customer on WhatsApp..."
+                  value={logComments}
+                  onChange={(e) => setLogComments(e.target.value)}
+                  style={{ width: '100%', padding: '10px', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', color: '#fff', fontSize: '0.88rem', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <button
                   type="button"
-                  onClick={() => setShowSubmitModal(false)}
-                  style={{ padding: '10px 20px', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-muted)', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
+                  onClick={() => setShowLogModal(false)}
+                  style={{ flex: 1, padding: '12px', background: '#334155', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: '600', cursor: 'pointer' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="btn-pos-checkout"
-                  disabled={submitFeedbackMutation.isPending}
-                  style={{ padding: '10px 24px', cursor: 'pointer' }}
+                  style={{ flex: 1, padding: '12px', background: '#22c55e', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: '700', cursor: 'pointer' }}
                 >
-                  {submitFeedbackMutation.isPending ? 'Saving...' : 'Submit Feedback'}
+                  Save WhatsApp Rating
                 </button>
               </div>
 
             </form>
+
           </div>
         </div>
       )}
