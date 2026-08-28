@@ -1115,9 +1115,9 @@ const Sales = () => {
               </button>
               <button
                 onClick={() => {
-                  const link = `${window.location.origin}/customer-feedback?invoice=${completedSaleData.invoiceNo}`;
+                  const link = completedSaleData.feedbackUrl || `${window.location.origin}/customer-feedback?token=${completedSaleData.feedbackToken || ''}`;
                   navigator.clipboard.writeText(link);
-                  alert(`Copied Customer Feedback Link to clipboard:\n${link}`);
+                  alert(`Copied Secure Customer Feedback Link to clipboard:\n${link}`);
                 }}
                 style={{ flex: 1, background: '#0284c7', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '12px', fontWeight: '700', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               >
