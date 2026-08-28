@@ -25,6 +25,7 @@ const StockInOut = () => {
   const [inBatchNo, setInBatchNo] = useState('');
   const [inPurchasePrice, setInPurchasePrice] = useState('');
   const [inSellingPrice, setInSellingPrice] = useState('');
+  const [inMfd, setInMfd] = useState('');
   const [inExpiryDate, setInExpiryDate] = useState('');
   const [inSupplier, setInSupplier] = useState('');
   const [inReason, setInReason] = useState('Restock Purchase Batch Addition');
@@ -51,6 +52,9 @@ const StockInOut = () => {
       setInBatchNo(matched.batchNumber || '');
       setInPurchasePrice(matched.purchasePrice || '');
       setInSellingPrice(matched.sellingPrice || '');
+      if (matched.mfd) {
+        setInMfd(new Date(matched.mfd).toISOString().split('T')[0]);
+      }
       if (matched.expiryDate) {
         setInExpiryDate(new Date(matched.expiryDate).toISOString().split('T')[0]);
       }
@@ -87,6 +91,7 @@ const StockInOut = () => {
           batchNumber: inBatchNo,
           purchasePrice: inPurchasePrice ? Number(inPurchasePrice) : undefined,
           sellingPrice: inSellingPrice ? Number(inSellingPrice) : undefined,
+          mfd: inMfd || undefined,
           expiryDate: inExpiryDate || undefined,
           supplierName: inSupplier,
           reason: inReason
@@ -99,6 +104,7 @@ const StockInOut = () => {
           batchNumber: inBatchNo || `BT-${Date.now().toString().slice(-4)}`,
           purchasePrice: inPurchasePrice ? Number(inPurchasePrice) : 0,
           sellingPrice: inSellingPrice ? Number(inSellingPrice) : 0,
+          mfd: inMfd || undefined,
           expiryDate: inExpiryDate || undefined,
           manufacturer: inSupplier || 'Generic Supplier',
           notes: inReason
@@ -113,6 +119,7 @@ const StockInOut = () => {
         setInMedId('');
         setInQty('');
         setInBatchNo('');
+        setInMfd('');
         setInPurchasePrice('');
         setInSellingPrice('');
         setInExpiryDate('');
@@ -324,6 +331,16 @@ const StockInOut = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div className="form-group">
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>MFD (Mfg Date)</label>
+                    <input 
+                      type="date" 
+                      value={inMfd}
+                      onChange={(e) => setInMfd(e.target.value)}
+                      style={{ width: '100%', padding: '10px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff' }}
+                    />
+                  </div>
+
+                  <div className="form-group">
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Expiry Date</label>
                     <input 
                       type="date" 
@@ -332,17 +349,17 @@ const StockInOut = () => {
                       style={{ width: '100%', padding: '10px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff' }}
                     />
                   </div>
+                </div>
 
-                  <div className="form-group">
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Supplier / Vendor Name</label>
-                    <input 
-                      type="text" 
-                      value={inSupplier}
-                      onChange={(e) => setInSupplier(e.target.value)}
-                      placeholder="e.g. Apex Pharma Distributors"
-                      style={{ width: '100%', padding: '10px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff' }}
-                    />
-                  </div>
+                <div className="form-group">
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Supplier / Vendor Name</label>
+                  <input 
+                    type="text" 
+                    value={inSupplier}
+                    onChange={(e) => setInSupplier(e.target.value)}
+                    placeholder="e.g. Apex Pharma Distributors"
+                    style={{ width: '100%', padding: '10px', background: 'rgba(21, 35, 62, 0.6)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: '#fff' }}
+                  />
                 </div>
 
                 <div className="form-group">

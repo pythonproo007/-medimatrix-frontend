@@ -53,6 +53,7 @@ const ProductDetails = () => {
     minStockAlert: '15',
     purchasePrice: '',
     sellingPrice: '',
+    mfd: '',
     expiryDate: '',
     rackLocation: 'Rack A-1',
     requiresPrescription: false
@@ -76,7 +77,7 @@ const ProductDetails = () => {
         setFormData({
           name: '', code: '', category: 'Antibiotics', medicineType: 'Tablet', activeIngredient: '',
           manufacturer: '', batchNumber: '', quantity: '', minStockAlert: '15', purchasePrice: '',
-          sellingPrice: '', expiryDate: '', rackLocation: 'Rack A-1', requiresPrescription: false
+          sellingPrice: '', mfd: '', expiryDate: '', rackLocation: 'Rack A-1', requiresPrescription: false
         });
         setTimeout(() => setMessage(''), 3000);
       }
@@ -99,6 +100,7 @@ const ProductDetails = () => {
       minStockAlert: med.minStockAlert,
       purchasePrice: med.purchasePrice,
       sellingPrice: med.sellingPrice,
+      mfd: med.mfd ? med.mfd.split('T')[0] : '',
       expiryDate: med.expiryDate ? med.expiryDate.split('T')[0] : '',
       rackLocation: med.rackLocation,
       requiresPrescription: med.requiresPrescription
@@ -465,6 +467,10 @@ const ProductDetails = () => {
                 <input type="number" step="0.01" name="sellingPrice" value={formData.sellingPrice} onChange={handleFormChange} required style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.03)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-main)' }} />
               </div>
               <div className="form-group">
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>MFD (Mfg Date)</label>
+                <input type="date" name="mfd" value={formData.mfd} onChange={handleFormChange} style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.03)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-main)' }} />
+              </div>
+              <div className="form-group">
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Expiry Date</label>
                 <input type="date" name="expiryDate" value={formData.expiryDate} onChange={handleFormChange} required style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.03)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-main)' }} />
               </div>
@@ -534,6 +540,10 @@ const ProductDetails = () => {
               <div className="form-group">
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Selling Price (₹)</label>
                 <input type="number" step="0.01" name="sellingPrice" value={formData.sellingPrice} onChange={handleFormChange} required style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.03)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-main)' }} />
+              </div>
+              <div className="form-group">
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>MFD (Mfg Date)</label>
+                <input type="date" name="mfd" value={formData.mfd} onChange={handleFormChange} style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.03)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-main)' }} />
               </div>
               <div className="form-group">
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Expiry Date</label>
