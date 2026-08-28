@@ -25,6 +25,7 @@ import LowStock from './pages/LowStock';
 import ExpiryMedicines from './pages/ExpiryMedicines';
 import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
+import CustomerFeedback from './pages/CustomerFeedback';
 
 const Layout = ({ children, stats, pageTitle }) => {
   return (
@@ -67,6 +68,7 @@ const App = () => {
             <Route path="/expiry-medicines" element={<Layout stats={stats} pageTitle="Expiry Warnings & Hazardous Disposal"><ExpiryMedicines /></Layout>} />
             <Route path="/reports" element={<Layout stats={stats} pageTitle="Business Ledger & Reports"><Reports /></Layout>} />
             <Route path="/notifications" element={<Layout stats={stats} pageTitle="System Notification Logs"><Notifications /></Layout>} />
+            <Route path="/feedback" element={<Layout stats={stats} pageTitle="Customer Feedback & Service Reviews"><CustomerFeedback /></Layout>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

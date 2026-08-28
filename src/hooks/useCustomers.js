@@ -56,3 +56,40 @@ export const useDeleteCustomer = () => {
     }
   });
 };
+
+export const useFeedbacks = (search = '', rating = '') => {
+  return useQuery({
+    queryKey: ['feedbacks', { search, rating }],
+    queryFn: async () => {
+      let url = '/api/customers/feedback';
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (rating) params.append('rating', rating);
+      if (params.toString()) url += `?${params.toString()}`;
+
+      const res = await api.get(url);
+      return res.success ? { data: res.data || [], meta: res.meta || {} } : { data: [], meta: {} };
+    }
+  });
+};
+
+export const useSubmitFeedback = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (formData) => api.post('/api/customers/feedback', formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['feedbacks'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    }
+  });
+};
+
+export const useDeleteFeedback = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.delete(`/api/customers/feedback/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['feedbacks'] });
+    }
+  });
+};

@@ -403,13 +403,13 @@ const CustomerDetails = () => {
             </div>
 
             {/* Prescriptions History */}
-            <div>
+            <div style={{ marginBottom: '24px' }}>
               <h4 style={{ color: '#fff', fontSize: '1.05rem', marginBottom: '14px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
                 <i className="fa-solid fa-file-prescription" style={{ color: 'var(--amber)', marginRight: '8px' }}></i>
-                Prescription Records History ({historyData.prescriptions.length} Records)
+                Prescription Records History ({historyData.prescriptions?.length || 0} Records)
               </h4>
 
-              {historyData.prescriptions.length === 0 ? (
+              {(!historyData.prescriptions || historyData.prescriptions.length === 0) ? (
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '16px', textAlign: 'center', background: 'rgba(255,255,255,0.01)', borderRadius: 'var(--radius-sm)' }}>
                   No prescription logs filed for this patient.
                 </div>
@@ -440,6 +440,41 @@ const CustomerDetails = () => {
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+
+            {/* Customer Feedback & Service Reviews History */}
+            <div>
+              <h4 style={{ color: '#fff', fontSize: '1.05rem', marginBottom: '14px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
+                <i className="fa-solid fa-star" style={{ color: '#f59e0b', marginRight: '8px' }}></i>
+                Logged Customer Feedback ({historyData.feedbacks?.length || 0} Reviews)
+              </h4>
+
+              {(!historyData.feedbacks || historyData.feedbacks.length === 0) ? (
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '16px', textAlign: 'center', background: 'rgba(255,255,255,0.01)', borderRadius: 'var(--radius-sm)' }}>
+                  No feedback reviews logged for this customer.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {historyData.feedbacks.map((fb) => (
+                    <div key={fb._id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '12px 16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <i key={s} className="fa-solid fa-star" style={{ color: s <= fb.rating ? '#f59e0b' : 'rgba(255,255,255,0.2)', fontSize: '0.85rem' }}></i>
+                          ))}
+                          <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: '600', marginLeft: '4px' }}>{fb.rating}/5</span>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                          {new Date(fb.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: '1.4' }}>
+                        "{fb.comments}"
+                      </p>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
