@@ -451,7 +451,7 @@ const Login = () => {
               {/* Username Input */}
               <div>
                 <label style={{ fontSize: '0.82rem', color: '#cbd5e1', fontWeight: '600', display: 'block', marginBottom: '8px' }}>
-                  Username or Email
+                  Username, Email, or Mobile Number
                 </label>
                 <div style={{ position: 'relative' }}>
                   <i className="fa-solid fa-user" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: '0.9rem' }}></i>
@@ -460,7 +460,7 @@ const Login = () => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
-                    placeholder="e.g. admin or employee"
+                    placeholder="e.g. 9876543210 or admin"
                     style={{
                       width: '100%',
                       padding: '13px 14px 13px 40px',

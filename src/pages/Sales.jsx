@@ -4,8 +4,31 @@ import ProductCard from '../components/ProductCard';
 import { useMedicines } from '../hooks/useMedicines';
 import { useCustomers } from '../hooks/useCustomers';
 import { useSales, useCreateSale, useValidatePromo } from '../hooks/useSales';
+import { useAuth } from '../context/AuthContext';
 
 const Sales = () => {
+  const { user } = useAuth();
+  const userPhone = user?.phone || '';
+  const userPaymentQr = user?.paymentQr || '';
+
+  const getQrImageSrc = (qrData, amount) => {
+    if (!qrData) return null;
+    if (qrData.startsWith('http://') || qrData.startsWith('https://') || qrData.startsWith('data:image/')) {
+      return qrData;
+    }
+    let payload = qrData;
+    if (!payload.includes('am=') && amount > 0) {
+      if (payload.includes('?')) {
+        payload += `&am=${amount.toFixed(2)}&cu=INR`;
+      } else if (payload.startsWith('upi://pay')) {
+        payload += `?am=${amount.toFixed(2)}&cu=INR`;
+      } else {
+        payload = `upi://pay?pa=${encodeURIComponent(payload)}&pn=${encodeURIComponent(user?.username || 'MediMatrix')}&am=${amount.toFixed(2)}&cu=INR`;
+      }
+    }
+    return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payload)}`;
+  };
+
   // Main View Mode: 'pos' (POS Checkout Terminal) | 'history' (Sales Transactions & Invoice Records)
   const [activeView, setActiveView] = useState('pos');
   const [search, setSearch] = useState('');
@@ -635,60 +658,70 @@ const Sales = () => {
 
                 {/* Dynamic UPI QR Code Display Container */}
                 {currentBill.paymentMethod === 'UPI / QR' && (
-                  <div style={{
-                    background: '#ffffff',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '16px',
-                    margin: '8px 0',
-                    textAlign: 'center',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
-                    color: '#0f172a'
-                  }}>
-                    <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#0f172a', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                      <i className="fa-solid fa-qrcode" style={{ color: '#0d9488', fontSize: '1rem' }}></i> Scan & Pay via UPI App
-                    </div>
-
-                    {/* QR Code graphic */}
-                    <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', display: 'inline-block', border: '1px solid #cbd5e1' }}>
-                      <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`upi://pay?pa=medimatrix.shop@upi&pn=MediMatrix+Pharmacy&am=${grandTotal.toFixed(2)}&cu=INR`)}`}
-                        alt="Store UPI QR Code"
-                        style={{ width: '150px', height: '150px', display: 'block', borderRadius: '4px' }}
-                      />
-                    </div>
-
-                    <div style={{ marginTop: '10px' }}>
-                      <div style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0d9488' }}>
-                        ₹{grandTotal.toFixed(2)}
+                  !userPaymentQr ? (
+                    <div style={{
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid #f87171',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '16px',
+                      margin: '8px 0',
+                      textAlign: 'center',
+                      color: '#f87171'
+                    }}>
+                      <div style={{ fontSize: '1.2rem', marginBottom: '4px' }}>⚠️</div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '4px' }}>
+                        Payment QR not available for this account.
                       </div>
-                      <div style={{ fontSize: '0.74rem', color: '#475569', marginTop: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                        UPI VPA: <strong style={{ color: '#0f172a' }}>medimatrix.shop@upi</strong>
-                        <button 
-                          type="button" 
-                          onClick={() => { 
-                            navigator.clipboard.writeText('medimatrix.shop@upi'); 
-                            setMessage('UPI ID medimatrix.shop@upi copied to clipboard!'); 
-                            setTimeout(() => setMessage(''), 3000); 
-                          }}
-                          style={{ background: 'none', border: 'none', color: '#0d9488', cursor: 'pointer', fontSize: '0.8rem', marginLeft: '2px' }}
-                          title="Copy UPI VPA"
+                      <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+                        Account: <strong>{user?.username || 'User'}</strong> {userPhone ? `(${userPhone})` : ''}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{
+                      background: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '16px',
+                      margin: '8px 0',
+                      textAlign: 'center',
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+                      color: '#0f172a'
+                    }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: '700', color: '#0f172a', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        <i className="fa-solid fa-qrcode" style={{ color: '#0d9488', fontSize: '1rem' }}></i> Scan & Pay via UPI App
+                      </div>
+
+                      {/* QR Code graphic */}
+                      <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', display: 'inline-block', border: '1px solid #cbd5e1' }}>
+                        <img 
+                          src={getQrImageSrc(userPaymentQr, grandTotal)}
+                          alt="Account Payment QR Code"
+                          style={{ width: '150px', height: '150px', display: 'block', borderRadius: '4px', objectFit: 'contain' }}
+                        />
+                      </div>
+
+                      <div style={{ marginTop: '10px' }}>
+                        <div style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0d9488' }}>
+                          ₹{grandTotal.toFixed(2)}
+                        </div>
+                        {userPhone && (
+                          <div style={{ fontSize: '0.74rem', color: '#0369a1', marginTop: '3px', fontWeight: '600' }}>
+                            📱 Account Mobile: {userPhone}
+                          </div>
+                        )}
+                        <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '6px', fontStyle: 'italic' }}>
+                          Accepts GPay, PhonePe, Paytm, BHIM & All UPI Apps
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowQrModal(true)}
+                          style={{ marginTop: '8px', background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#334155', borderRadius: '4px', padding: '4px 10px', fontSize: '0.72rem', cursor: 'pointer', fontWeight: '600' }}
                         >
-                          <i className="fa-regular fa-copy"></i>
+                          <i className="fa-solid fa-expand" style={{ marginRight: '4px' }}></i> Enlarge QR Code
                         </button>
                       </div>
-                      <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '6px', fontStyle: 'italic' }}>
-                        Accepts GPay, PhonePe, Paytm, BHIM & All UPI Apps
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowQrModal(true)}
-                        style={{ marginTop: '8px', background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#334155', borderRadius: '4px', padding: '4px 10px', fontSize: '0.72rem', cursor: 'pointer', fontWeight: '600' }}
-                      >
-                        <i className="fa-solid fa-expand" style={{ marginRight: '4px' }}></i> Enlarge QR Code
-                      </button>
                     </div>
-                  </div>
+                  )
                 )}
 
 
@@ -1004,38 +1037,41 @@ const Sales = () => {
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', fontWeight: '700', color: '#0f172a' }}>
-                <i className="fa-solid fa-qrcode" style={{ color: '#0d9488', fontSize: '1.2rem' }}></i> MediMatrix Store QR Pay
+                <i className="fa-solid fa-qrcode" style={{ color: '#0d9488', fontSize: '1.2rem' }}></i> Account Payment QR
               </div>
               <button onClick={() => setShowQrModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '1.4rem', cursor: 'pointer' }}>&times;</button>
             </div>
 
-            <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'inline-block', marginBottom: '16px' }}>
-              <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`upi://pay?pa=medimatrix.shop@upi&pn=MediMatrix+Pharmacy&am=${grandTotal.toFixed(2)}&cu=INR`)}`}
-                alt="Enlarged UPI QR Code"
-                style={{ width: '230px', height: '230px', display: 'block', borderRadius: '8px' }}
-              />
-            </div>
+            {!userPaymentQr ? (
+              <div style={{ padding: '24px', background: '#fef2f2', borderRadius: '12px', color: '#991b1b', marginBottom: '20px' }}>
+                <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>⚠️</div>
+                <div style={{ fontWeight: '700', fontSize: '1rem' }}>Payment QR not available for this account.</div>
+                <div style={{ fontSize: '0.85rem', color: '#7f1d1d', marginTop: '6px' }}>
+                  Mobile: {userPhone || 'Not set'}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'inline-block', marginBottom: '16px' }}>
+                  <img 
+                    src={getQrImageSrc(userPaymentQr, grandTotal)}
+                    alt="Enlarged Account Payment QR Code"
+                    style={{ width: '230px', height: '230px', display: 'block', borderRadius: '8px', objectFit: 'contain' }}
+                  />
+                </div>
 
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0d9488' }}>
-                ₹{grandTotal.toFixed(2)}
-              </div>
-              <div style={{ fontSize: '0.85rem', color: '#475569', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                UPI ID: <strong style={{ color: '#0f172a' }}>medimatrix.shop@upi</strong>
-                <button 
-                  type="button" 
-                  onClick={() => { 
-                    navigator.clipboard.writeText('medimatrix.shop@upi'); 
-                    setMessage('UPI ID copied!'); 
-                    setTimeout(() => setMessage(''), 2000); 
-                  }}
-                  style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#0d9488', cursor: 'pointer', fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px' }}
-                >
-                  <i className="fa-regular fa-copy"></i> Copy
-                </button>
-              </div>
-            </div>
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0d9488' }}>
+                    ₹{grandTotal.toFixed(2)}
+                  </div>
+                  {userPhone && (
+                    <div style={{ fontSize: '0.85rem', color: '#0369a1', marginTop: '4px', fontWeight: '600' }}>
+                      📱 Account Mobile Number: {userPhone}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
 
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '20px' }}>
               <span style={{ background: '#f1f5f9', color: '#334155', padding: '4px 10px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: '600' }}>Google Pay</span>
