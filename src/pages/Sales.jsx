@@ -58,6 +58,8 @@ const Sales = () => {
   // Confirmation modal state before clearing/completing checkout
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [showWhatsappSuccessModal, setShowWhatsappSuccessModal] = useState(false);
+  const [completedSaleData, setCompletedSaleData] = useState(null);
 
   // Sales History & Invoice Record state
   const [salesSearch, setSalesSearch] = useState('');
@@ -291,9 +293,14 @@ const Sales = () => {
           setActiveBillIndex(Math.max(0, activeBillIndex - 1));
         }
 
-        // Prompt to view completed invoice
-        if (res.data && res.data._id) {
-          handleViewInvoice(res.data._id);
+        if (res.data) {
+          setCompletedSaleData(res.data);
+          setShowWhatsappSuccessModal(true);
+          if (res.data.whatsappUrl) {
+            try {
+              window.open(res.data.whatsappUrl, '_blank');
+            } catch (e) {}
+          }
         }
       }
     } catch (err) {
@@ -1043,6 +1050,45 @@ const Sales = () => {
             >
               Done / Close QR Code
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* WhatsApp Bill Dispatch Modal */}
+      {showWhatsappSuccessModal && completedSaleData && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', zIndex: 1400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: '#1e293b', color: '#f8fafc', borderRadius: '16px', padding: '28px', width: '480px', maxWidth: '100%', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', border: '1px solid #334155' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>✅📱</div>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#22c55e', margin: '0 0 6px 0' }}>Bill Generated Successfully!</h2>
+            <p style={{ fontSize: '0.9rem', color: '#94a3b8', margin: '0 0 16px 0' }}>Invoice #{completedSaleData.invoiceNo}</p>
+
+            <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '14px', textAlign: 'left', fontSize: '0.82rem', color: '#cbd5e1', whiteSpace: 'pre-wrap', maxHeight: '180px', overflowY: 'auto', marginBottom: '20px', fontFamily: 'Fira Code, monospace' }}>
+              {completedSaleData.whatsappText}
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => {
+                  if (completedSaleData.whatsappUrl) {
+                    window.open(completedSaleData.whatsappUrl, '_blank');
+                  }
+                }}
+                style={{ flex: 1, background: '#25d366', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '12px', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                📱 Send on WhatsApp
+              </button>
+              <button
+                onClick={() => {
+                  setShowWhatsappSuccessModal(false);
+                  if (completedSaleData && completedSaleData._id) {
+                    handleViewInvoice(completedSaleData._id);
+                  }
+                }}
+                style={{ flex: 1, background: '#334155', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '12px', fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer' }}
+              >
+                View Full Receipt
+              </button>
+            </div>
           </div>
         </div>
       )}

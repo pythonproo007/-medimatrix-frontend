@@ -26,6 +26,7 @@ import ExpiryMedicines from './pages/ExpiryMedicines';
 import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import CustomerFeedback from './pages/CustomerFeedback';
+import CustomerPortal from './pages/CustomerPortal';
 
 const Layout = ({ children, stats, pageTitle }) => {
   return (
@@ -50,6 +51,7 @@ const App = () => {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/customer-portal" element={<CustomerPortal />} />
           
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Layout stats={stats} pageTitle="Dashboard Control Center"><Dashboard setStatsData={setStats} /></Layout>} />

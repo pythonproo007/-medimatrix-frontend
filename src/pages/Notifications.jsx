@@ -58,6 +58,9 @@ const Notifications = () => {
               } else if (notif.type === 'prescription_dispensed') {
                 typeClass = 'info';
                 icon = 'fa-file-prescription';
+              } else if (notif.type === 'home_delivery') {
+                typeClass = 'success';
+                icon = 'fa-truck-ramp-box';
               }
 
               return (

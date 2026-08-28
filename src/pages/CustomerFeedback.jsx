@@ -272,10 +272,15 @@ const CustomerFeedback = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                   <div>
                     <h3 style={{ color: '#fff', fontSize: '1rem', fontWeight: '600', margin: 0 }}>{item.name}</h3>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       {item.phone && <span><i className="fa-solid fa-phone" style={{ marginRight: '4px' }}></i>{item.phone}</span>}
                       {item.email && <span><i className="fa-solid fa-envelope" style={{ marginRight: '4px' }}></i>{item.email}</span>}
                     </div>
+                    {item.invoiceNo && (
+                      <div style={{ fontSize: '0.78rem', color: '#38bdf8', marginTop: '4px', fontWeight: '600' }}>
+                        <i className="fa-solid fa-file-invoice" style={{ marginRight: '4px' }}></i>Bill / Order #{item.invoiceNo}
+                      </div>
+                    )}
                   </div>
                   <span
                     className={`badge ${item.customerId?.isRegular ? 'success' : 'info'}`}
